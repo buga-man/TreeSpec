@@ -10,7 +10,7 @@ classification: stochastic
 # ── SKILL CONTRACT (CON-09) ───────────────────────────────────────
 input:
   - draft_spec: markdown                  # from brainstorm
-  - template: string                      # path to template (default: documents/assets/spec.template.md)
+  - template: string                      # path to template (default: ../../documents/assets/spec.template.md)
 output:
   - spec_file: path                       # artifacts/global/biz-spec/REQ-DOMAIN-NNN.md
   - index_entry: bool                     # whether artifacts/INDEX.md was updated
@@ -39,7 +39,7 @@ composition:
 
 **Stage:** 1 (Spec). **Launched** by the agent after `brainstorm`.
 **Purpose:** turn an L0 spec draft into a **valid file** per the template
-`documents/assets/spec.template.md` and register it in the system.
+`../../documents/assets/spec.template.md` and register it in the system.
 
 > **Source of truth:** `tree-spec.toml` sections
 > `[pipeline.stages.spec]` (exit criteria, gate) and
@@ -53,58 +53,17 @@ composition:
 
 ### Step 0. Bootstrap artifacts (if missing)
 
-If the project is fresh — `artifacts/` does not exist — bootstrap the
-minimum structure before any other step. This makes the kit
-self-contained: the user installs `tree-spec.toml` + `skills/` +
-`specs/`, then runs `write-spec` and gets a usable tree.
-
-Check whether `artifacts/` exists:
-
-```
-test -d artifacts && echo EXISTS || echo MISSING
-```
-
-If **MISSING**, create the minimum structure inline — no template
-files are required (the layout is fully described in
-`documents/references/artifacts-layout.md`):
-
-```
-mkdir -p artifacts/global/biz-spec
-mkdir -p artifacts/epics
-```
-
-Bootstrap invariants (asserted by `REQ-TREESPEC-001` AC-6):
-
-1. `artifacts/README.md` — agent protocol (session start/end rules).
-   Copy verbatim from this skill's knowledge of the protocol, or read it
-   from the kit source if available.
-2. `artifacts/INDEX.md` — empty header table ready for epic registration.
-3. `artifacts/global/biz-spec/` — directory (biz-spec REQ storage).
-4. `artifacts/global/biz-spec/README.md` — domain / numbering conventions
-   (optional but recommended).
-5. `artifacts/epics/` — directory (one folder per epic, created on
-   demand by the `plan` skill).
-
-Subdirectories like `artifacts/global/intake/` and the per-epic folder
-are **created on demand** by their owning skill (`intake` and `plan`
-respectively). Bootstrap only creates the 5 entries above.
-
-> **Reference:** see `documents/references/artifacts-layout.md` for the
-> complete directory tree, file roles, and naming conventions.
-
-If **EXISTS**, skip this step — the user already has structure.
-
-> **Why this lives in `write-spec`:** it is the first **writing** skill
-> in the pipeline. Anything before it (`session-resume`, `brainstorm`)
-> is read-only or in-memory. `write-spec` is the natural place to
-> prepare the disk before its own writes.
+Bootstrap lives in exactly one capability — the router's `init` (see
+`../../documents/spec-format.md` for the single-responsibility rule).
+If `artifacts/` does not exist, the router has already run `init` before
+handing off to `write-spec`; do not re-bootstrap here.
 
 ### Step 1. Context
 
 Read:
 
-1. `documents/assets/spec.template.md` — the canonical template (single source of truth).
-2. `documents/spec-format.md` — the canonical rules reference.
+1. `../../documents/assets/spec.template.md` — the canonical template (single source of truth).
+2. `../../documents/spec-format.md` — the canonical rules reference.
 3. `artifacts/global/biz-spec/README.md` — conventions for domain / numbering.
 4. `artifacts/global/biz-spec/` — existing specs to verify `id` uniqueness.
 
@@ -134,7 +93,7 @@ Checks:
 
 Create the file `artifacts/global/biz-spec/REQ-DOMAIN-NNN.md`:
 
-1. Copy `documents/assets/spec.template.md`.
+1. Copy `../../documents/assets/spec.template.md`.
 2. Replace every `<PLACEHOLDER>` with the value from the draft.
 3. Keep **commented instructions** in the file? **No.** Before writing,
    strip all commented instructions from the template — they are for the
@@ -195,7 +154,7 @@ Add a row in `artifacts/INDEX.md`:
 If brainstorm marked conflicts:
 
 1. Create `artifacts/epics/<EPIC>/docs/conflict-NNN.md` per
-   `documents/assets/conflict-doc.template.md`.
+   `../../documents/assets/conflict-doc.template.md`.
 2. Status: `open`.
 3. Add an entry in the epic `STATUS.md` → "Open problems".
 4. Add a row in the epic `tasks.md` → first task T-00 "Close conflict-NNN"
@@ -230,7 +189,7 @@ Return to the human:
   `artifacts/INDEX.md`, `artifacts/global/biz-spec/`,
   `artifacts/global/biz-spec/README.md`, and `artifacts/epics/`. Do
   not touch user files during bootstrap — fail-closed if something else
-  is missing. See `documents/references/artifacts-layout.md` for the
+  is missing. See `../../documents/references/artifacts-layout.md` for the
   authoritative list.
 
 ---

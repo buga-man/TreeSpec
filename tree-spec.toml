@@ -1,21 +1,25 @@
 # ════════════════════════════════════════════════════════════════
-# TreeSpec — Project Manifest v0.1 (agent-readable)
+# TreeSpec — Project Manifest v0.2 (agent-readable)
 # Canonical format: documents/concepts/10-manifest.md
 #
-# This file is **dual-purpose**:
+# This file is dual-purpose:
 #   1. Declarative configuration for humans and (eventually) tooling.
 #   2. Agent-actionable contract — the AI reads it to know which skill
 #      runs at each stage, what artifacts to expect, and which rules
 #      apply. See `specs/REQ-SETUP-001.md` and the per-skill specs.
 #
-# Phase: 0 (Solo Dogfood) — only the sections required by the 4-stage flow.
-# Other sections ([plugins], [profile], [workspace], [governance),
-# [kernel.reproducibility], [pipeline.stewardship]) will be added in
-# phase 1+ based on observed pain — see phase_0.md § "TOML v0.1".
+# Emitted / validated by the `tree-spec` router (EPIC-004-skill-packaging,
+# REQ-PACK-001). Supersedes the v0.1 manifest structure.
 #
-# Paths in [pipeline.skills.*].file are RELATIVE to this manifest.
-# This keeps the kit self-contained and portable — setup.md § Step 4.
-# ════════════════════════════════════════════════════════════════
+# Manifest v0.2 (two-layer ownership):
+#   * User-owned sections ([identity], [kernel], [meta], [pipeline.*]) are
+#     edited only on explicit human request, then re-validated by the router.
+#   * [epic] is machine-maintained: recomputed from artifacts/ at session
+#     start, never hand-edited.
+#   * [pipeline.skills.*].file values resolve RELATIVE TO THE SKILL ROOT
+#     (skills/tree-spec/), keeping the manifest portable across install
+#     locations (this repo's tree-spec.toml sits at the repo root).
+# ────────────────────────────────────────────────────────────────
 
 # ── IDENTITY · what is this project ──────────────────────────────
 [identity]
@@ -60,11 +64,10 @@ entry_skill = "intake"                 # first skill to invoke at this stage
 skills = ["intake", "brainstorm", "write-spec"]   # all skills allowed at this stage
 produces = ["spec_file", "biz_spec_delta"]
 exit_criteria = [
-  "Spec file exists at artifacts/global/biz-spec/REQ-DOMAIN-NNN.md",
+  "Spec file exists in the project's artifacts/global/biz-spec/",
   "Spec passes L0 validation (id format REQ-[A-Z]{2,6}-\\d{3}, scope.in, AC, oracle)",
   "Spec status = draft (transitions to approved after the gate)",
   "artifacts/INDEX.md has a row referencing the new spec",
-  "artifacts/epics/<EPIC>/docs/biz-spec-delta.md created",
 ]
 exit_gate = "G_spec"                    # human approves before stage 2
 
@@ -110,91 +113,70 @@ exit_criteria = [
 ]
 exit_gate = "G_done"
 
-# ── SKILLS · per-skill metadata (for AI agent) ───────────────────
-# Each skill answers: "where is its procedure, how is it classified,
-# what does it produce, what does it expect as input, and what does it
-# NOT do (boundary reminder for the agent)".
+# ── SKILLS · capability contracts (paths skill-root-relative) ─────
+# The kit is packaged as ONE top-level skill: skills/tree-spec/.
+# skills/tree-spec/SKILL.md is the router/registrar (the only registered
+# skill). All capabilities live under skills/tree-spec/core-capabilities/.
+#
+# [pipeline.skills.*].file values resolve RELATIVE TO THE SKILL ROOT
+# (skills/tree-spec/): e.g. core-capabilities/init/SKILL.md ->
+# skills/tree-spec/core-capabilities/init/SKILL.md. The router declares
+# this resolution rule (see its "Manifest v0.2 resolution"). The router
+# itself is SKILL.md (relative to the skill root).
+[pipeline.skills.tree-spec]
+file = "SKILL.md"
+classification = "hybrid"
+description = "Registrar/router: startup, validation, session-resume, dispatch"
+entry = true                          # the front door; runs at any session start
+stage = "any"
+
+[pipeline.skills.init]
+file = "core-capabilities/init/SKILL.md"
+classification = "hybrid"
+description = "Bootstrap: manifest (from template) + artifacts/ skeleton"
+stage = "any"
 
 [pipeline.skills.session-resume]
-file = "skills/session-resume/SKILL.md"
-classification = "pure"                 # read-only, deterministic
-description = "Read-only 'compass' at session start: recover epic state from artifacts, recommend next action"
-expects_input = "active epic from artifacts/INDEX.md"
-produces = []                          # read-only — no output artifacts
-boundary = "MUST NOT invoke any other skill; MUST NOT write to any file"
-stage = "any"                          # runs at session start, before any stage
+file = "core-capabilities/session-resume/SKILL.md"
+classification = "pure"
+description = "Read-only state recovery + next-action recommendation"
+stage = "any"
 
 [pipeline.skills.intake]
-file = "skills/intake/SKILL.md"
-classification = "hybrid"               # deterministic normalization + stochastic extraction judgement
-description = "Stage 1 preparation: raw sources → normalized candidates → persistent intake buffer (append-only)"
-expects_input = "one or more raw source paths; if none — pass through to brainstorm"
-produces = ["intake_buffer_update"]     # rows appended to artifacts/intake/REQUIREMENTS.md
-side_artifacts = [
-  "artifacts/intake/REQUIREMENTS.md (created on first run if missing)",
-]
-boundary = "MUST NOT write spec files into biz-spec; MUST NOT select candidates without explicit human confirmation; MUST NOT remove buffer rows"
+file = "core-capabilities/intake/SKILL.md"
+classification = "hybrid"
+description = "Raw sources → candidate buffer"
 stage = "spec"
 
 [pipeline.skills.brainstorm]
-file = "skills/brainstorm/SKILL.md"
-classification = "stochastic"           # dialogue + LLM judgement
-description = "Stage 1 dialogue: human idea → L0 spec draft (in memory)"
-expects_input = "idea + context from artifacts/INDEX.md and global/biz-spec/"
-produces = ["spec_draft"]              # in-memory; handoff to write-spec
-boundary = "MUST NOT write to artifacts/global/biz-spec/; MUST NOT fill L2 fields"
+file = "core-capabilities/brainstorm/SKILL.md"
+classification = "stochastic"
+description = "L0 spec draft"
+stage = "spec"
 
 [pipeline.skills.write-spec]
-file = "skills/write-spec/SKILL.md"
-classification = "stochastic"           # validation is mechanical, but generation is LLM
-description = "Stage 1 finalize: validate L0 fields, write spec, register in INDEX, create delta"
-expects_input = "spec_draft from brainstorm"
-produces = ["spec_file", "biz_spec_delta"]
-side_artifacts = [
-  "artifacts/INDEX.md (updated with the new REQ row)",
-  "artifacts/epics/<EPIC>/docs/biz-spec-delta.md (created)",
-  "artifacts/epics/<EPIC>/docs/conflict-NNN.md (created if conflicts)",
-]
-boundary = "MUST validate L0 before writing; MUST NOT fill L2 fields in phase 0"
+file = "core-capabilities/write-spec/SKILL.md"
+classification = "stochastic"
+description = "Write + register spec"
+stage = "spec"
 
 [pipeline.skills.plan]
-file = "skills/plan/SKILL.md"
-classification = "hybrid"               # deterministic structure + stochastic estimation
-description = "Stage 2: decompose approved spec into tasks + feasibility + (optional) system-analysis"
-expects_input = "approved spec (status=approved)"
-produces = ["tasks_md", "feasibility_md", "system_analysis_md"]
-side_artifacts = [
-  "artifacts/epics/<EPIC>/tasks.md",
-  "artifacts/epics/<EPIC>/docs/feasibility.md",
-  "artifacts/epics/<EPIC>/docs/system-analysis.md (only if API)",
-]
-boundary = "MUST refuse on cycle; MUST NOT sum complexity; MUST NOT modify the spec"
+file = "core-capabilities/plan/SKILL.md"
+classification = "hybrid"
+description = "Decompose approved spec into tasks + feasibility"
+stage = "plan"
 
 [pipeline.skills.implement]
-file = "skills/implement/SKILL.md"
+file = "core-capabilities/implement/SKILL.md"
 classification = "hybrid"
-description = "Stage 3: implement one task per session, write claim/verify report"
-expects_input = "task T-NN from tasks.md, related spec"
-produces = ["code_changes", "report_md"]
-side_artifacts = [
-  "artifacts/epics/<EPIC>/docs/report-NN.md (one per task)",
-  "artifacts/epics/<EPIC>/STATUS.md (updated)",
-  "artifacts/epics/<EPIC>/tasks.md (status updated)",
-  "artifacts/epics/<EPIC>/docs/conflict-NNN.md (if scope creep / breaking change)",
-]
-boundary = "MUST run one task per session; MUST NOT claim pass without evidence; MUST NOT widen scope"
+description = "Implement one task per session with claim/verify report"
+stage = "implement"
 
 [pipeline.skills.verify]
-file = "skills/verify/SKILL.md"
-classification = "pure"                 # deterministic oracle execution
-description = "Stage 4: run AC oracles, capture evidence, surface FAILs as conflict docs"
-expects_input = "approved spec + report(s) from implement"
-produces = ["verification_md", "evidence_files"]
-side_artifacts = [
-  "artifacts/epics/<EPIC>/docs/verification.md",
-  "artifacts/epics/<EPIC>/docs/evidence/REQ-...AC-N.<format> (per AC)",
-]
-boundary = "MUST NOT edit code; MUST NOT claim PASS for SKIP / MANUAL_PENDING without justification"
+file = "core-capabilities/verify/SKILL.md"
+classification = "pure"
+description = "Run AC oracles, capture evidence, surface FAILs"
+stage = "verify"
 
 # ── EVALUATION · global rules that apply across all stages ───────
 # These are the cross-cutting invariants. Each maps to a kernel invariant
@@ -231,18 +213,16 @@ participants = [
   { kind = "human", id = "owner" },     # human makes the decision
 ]
 
+# ── EPIC · machine-maintained pointer (CON-10 derived view) ───────
+# Recomputed from artifacts/INDEX.md + active epic STATUS.md at session
+# start by the router. Never hand-edited. On divergence artifacts win and
+# a warning is recorded (REQ-PACK-001 AC-6).
+[epic]
+active = "EPIC-004-skill-packaging"
+stage = "2"
+updated = "2026-08-31"
+
 # ── GOVERNANCE · deferred to phase 2+ ────────────────────────────
 # Will appear once the pain arrives: gate timeouts, escalation policy,
 # who may edit the manifest, audit level. For now — kernel defaults:
 # all gates are strict (fail-closed), decisions are owned.
-
-# ── INVARIANTS · quick reference for the reviewer ────────────────
-# This manifest obeys the 6 kernel invariants (documents/concepts/07-kernel.md):
-# 1. PATH/DECISIONS are append-only — enforced by the protocol, not the manifest.
-# 2. Conflict doc blocks — enforced by the protocol; restated in [pipeline.evaluation].
-# 3. Claim/verify is mandatory — enforced by report.template.md; restated above.
-# 4. Backward compatibility on growth — phase 0 does not exercise this yet.
-# 5. Unknown fields do not break the kernel — phase 0 is strict, so adding
-#    fields in phase 1+ will require a migration.
-# 6. Skill composition is explicit — every skill declares its composition in
-#    frontmatter; `session-resume` is a special case (read-only, never invokes).

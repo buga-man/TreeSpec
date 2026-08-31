@@ -81,7 +81,7 @@ Each task gets:
 
 ### Step 3. Estimate complexity (S/M/L/XL)
 
-Criteria — from `documents/artifacts.md` § "Complexity":
+Criteria — from `../../documents/artifacts.md` § "Complexity":
 
 | Size | Repos / modules | API | Migrations | Novelty |
 |---|---|---|---|---|
@@ -171,7 +171,7 @@ If at least one task introduces / modifies a public API, create
 
 Create / update `artifacts/epics/<EPIC>/tasks.md`. There is no template
 file — the layout is fully described in
-`documents/references/artifacts-layout.md` (per-epic folder section).
+`../../documents/references/artifacts-layout.md` (per-epic folder section).
 Fill in:
 
 - Status overview (table).
@@ -213,4 +213,4 @@ STATUS.md and DECISIONS.md are updated.
   - The task DAG has no cycles.
   - All AC risks are recorded in feasibility.
   - tasks.md conforms to the per-epic layout in
-    `documents/references/artifacts-layout.md`.
+    `../../documents/references/artifacts-layout.md`.

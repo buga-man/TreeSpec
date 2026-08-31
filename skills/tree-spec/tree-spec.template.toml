@@ -1,0 +1,172 @@
+# ════════════════════════════════════════════════════════════════
+# tree-spec.template.toml · Manifest template for `init`
+# (EPIC-004-skill-packaging, REQ-PACK-001 — manifest v0.2)
+#
+# Shipped inside the skill at tree-spec/tree-spec.template.toml. The
+# `init` capability copies this to a project's tree-spec.toml and the human
+# fills [identity]. Everything else is phase-0-correct out of the box.
+#
+# Manifest v0.2 rules (see the router's "Manifest v0.2 resolution"):
+#   * [pipeline.skills.*].file values resolve RELATIVE TO THE SKILL ROOT
+#     (tree-spec/tree-spec/), not the repo root — keeps the manifest
+#     portable across install locations.
+#   * [epic] is machine-maintained: recomputed from artifacts/ at session
+#     start, never hand-edited.
+#   * User-owned sections ([identity], [kernel], [meta], [pipeline.*]) are
+#     edited only on explicit human request, then re-validated.
+# ────────────────────────────────────────────────────────────────
+
+[identity]
+name = "treespec-target"                # FILL: project name
+owners = ["treespec-maintainers"]       # FILL: who owns this manifest
+
+[kernel]
+version = "0.1.0"                       # semver-range. Phase 0: exact version.
+compatibility = "strict"                # strict | lenient
+
+[meta]
+language = "en"
+default_locale = "en"
+
+[pipeline]
+stage_order = ["spec", "plan", "implement", "verify"]
+default_stage = "spec"
+
+[pipeline.stages.spec]
+description = "Define what the system should do: L0 spec + AC with oracles"
+entry_skill = "intake"
+skills = ["intake", "brainstorm", "write-spec"]
+produces = ["spec_file", "biz_spec_delta"]
+exit_criteria = [
+  "Spec file exists in the project's artifacts/global/biz-spec/",
+  "Spec passes L0 validation (id format REQ-[A-Z]{2,6}-\\d{3}, scope.in, AC, oracle)",
+  "Spec status = draft (transitions to approved after the gate)",
+  "artifacts/INDEX.md has a row referencing the new spec",
+]
+exit_gate = "G_spec"
+
+[pipeline.stages.plan]
+description = "Decompose approved spec into atomic tasks + feasibility + (optional) API contracts"
+entry_skill = "plan"
+skills = ["plan"]
+produces = ["tasks_md", "feasibility_md", "system_analysis_md"]
+exit_criteria = [
+  "tasks.md has T-NN tasks with REQ links",
+  "Each task has justified complexity (S/M/L/XL)",
+  "Task DAG is cycle-free",
+  "Epic complexity = max over tasks (NOT sum)",
+  "feasibility.md exists with summary, risks, recommendation",
+]
+exit_gate = "G_plan"
+
+[pipeline.stages.implement]
+description = "Implement each task with claim/verify reports; one task per session"
+entry_skill = "implement"
+skills = ["implement"]
+produces = ["code_changes", "report_md"]
+exit_criteria = [
+  "Every task has docs/report-NN.md with full ac_coverage",
+  "Every satisfied AC has test_refs or ci_run (claim/verify mandatory)",
+]
+exit_gate = ""
+
+[pipeline.stages.verify]
+description = "Run AC oracles mechanically; capture evidence; surface FAILs as conflict docs"
+entry_skill = "verify"
+skills = ["verify"]
+produces = ["verification_md", "evidence_files"]
+exit_criteria = [
+  "docs/verification.md exists",
+  "Every AC has a status: pass | fail | skip | manual_pending",
+  "PASS requires observed value = oracle",
+  "FAILs trigger docs/conflict-NNN.md (NOT code fixes from verify)",
+]
+exit_gate = "G_done"
+
+# ── SKILLS · capability contracts (file paths skill-root-relative) ──
+[pipeline.skills.tree-spec]
+file = "SKILL.md"
+classification = "hybrid"
+description = "Registrar/router: startup, validation, session-resume, dispatch"
+entry = true
+stage = "any"
+
+[pipeline.skills.init]
+file = "core-capabilities/init/SKILL.md"
+classification = "hybrid"
+description = "Bootstrap: manifest (from template) + artifacts/ skeleton"
+stage = "any"
+
+[pipeline.skills.session-resume]
+file = "core-capabilities/session-resume/SKILL.md"
+classification = "pure"
+description = "Read-only state recovery + next-action recommendation"
+stage = "any"
+
+[pipeline.skills.intake]
+file = "core-capabilities/intake/SKILL.md"
+classification = "hybrid"
+description = "Raw sources → candidate buffer"
+stage = "spec"
+
+[pipeline.skills.brainstorm]
+file = "core-capabilities/brainstorm/SKILL.md"
+classification = "stochastic"
+description = "L0 spec draft"
+stage = "spec"
+
+[pipeline.skills.write-spec]
+file = "core-capabilities/write-spec/SKILL.md"
+classification = "stochastic"
+description = "Write + register spec"
+stage = "spec"
+
+[pipeline.skills.plan]
+file = "core-capabilities/plan/SKILL.md"
+classification = "hybrid"
+description = "Decompose approved spec into tasks + feasibility"
+stage = "plan"
+
+[pipeline.skills.implement]
+file = "core-capabilities/implement/SKILL.md"
+classification = "hybrid"
+description = "Implement one task per session with claim/verify report"
+stage = "implement"
+
+[pipeline.skills.verify]
+file = "core-capabilities/verify/SKILL.md"
+classification = "pure"
+description = "Run AC oracles, capture evidence, surface FAILs"
+stage = "verify"
+
+[pipeline.evaluation]
+claim_verify = "mandatory — every report has claim + verify parts"
+scope_respect = "scope.in only; scope.out is taboo; any creep → conflict doc"
+conflict_handling = "open conflict docs block stage progression"
+history_append_only = "PATH.md and DECISIONS.md are append-only"
+skill_composition = "explicit only — composition declared in skill frontmatter"
+backward_compatibility = "adding optional sections must not invalidate existing artifacts"
+unknown_fields = "unknown fields do not break the kernel — ignored or marked disabled"
+human_gates = "G_spec, G_plan, G_done — only humans may pass these"
+
+[pipeline.gates.G_spec]
+description = "Spec approved by human: all L0 fields filled, AC with oracles"
+participants = [{ kind = "human", id = "owner" }]
+
+[pipeline.gates.G_plan]
+description = "Plan approved by human: tasks agreed, complexity adjusted"
+participants = [{ kind = "human", id = "owner" }]
+
+[pipeline.gates.G_done]
+description = "Verification accepted by human: oracles passed mechanically"
+participants = [
+  { kind = "skill", id = "verify" },
+  { kind = "human", id = "owner" },
+]
+
+# ── EPIC · machine-maintained pointer (recomputed from artifacts/) ──
+# Never hand-edited. The router recomputes this at session start.
+[epic]
+active = ""                         # FILL/UPDATE by router: e.g. "EPIC-001-x"
+stage = ""                          # "" | 1 | 2 | 3 | 4 | closed
+updated = ""                        # router sets the last-updated date

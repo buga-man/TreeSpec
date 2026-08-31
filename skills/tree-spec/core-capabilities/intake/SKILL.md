@@ -48,28 +48,10 @@ files belongs to `write-spec`.
 
 ## Procedure
 
-### Step 0. Bootstrap the intake buffer (if missing)
-
-Check:
-
-```
-test -f artifacts/intake/REQUIREMENTS.md && echo EXISTS || echo MISSING
-```
-
-If **MISSING**, create it with:
-
-- a candidate table (columns Cand-ID, Text, Source ref, Domain, Status,
-  Confidence),
-- the status legend (candidate → selected → specced / discarded),
-- the rules block (append-only rows; overlap flagging; human-gated
-  selection).
-
-If **EXISTS**, skip — the buffer already lives.
-
 ### Step 1. Collect raw sources
 
 Input: one or more raw source paths — files or directories. Typical
-formats and extraction heuristics: see `documents/assets/intake-formats.md`.
+formats and extraction heuristics: see `../../documents/assets/intake-formats.md`.
 
 Before extracting, check what is already in the buffer: if a source was
 already ingested (same path), append only genuinely new rows.

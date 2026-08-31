@@ -139,7 +139,7 @@ it in the spec `open_questions` as `blocking: true`.
 Build an **L0 spec draft** (L0 fields only; L1/L2 are not filled here —
 that is the responsibility of `write-spec` and / or plugins).
 
-Mandatory draft fields (see `documents/spec-format.md` § L0):
+Mandatory draft fields (see `../../documents/spec-format.md` § L0):
 
 - `id` — next free `REQ-DOMAIN-NNN` (scan `global/biz-spec/`).
 - `title` — single, imperative, ≤120 chars.

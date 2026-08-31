@@ -86,7 +86,7 @@ Rules:
 ### Step 4. Claim/Verify report
 
 Create `artifacts/epics/<EPIC>/docs/report-NN.md` per the template
-`documents/assets/report.template.md`. Fill the frontmatter **completely**:
+`../../documents/assets/report.template.md`. Fill the frontmatter **completely**:
 
 ```yaml
 task_id: T-NN

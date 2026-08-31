@@ -95,7 +95,7 @@ mkdir -p <project>/artifacts/epics
 Copy `artifacts/README.md` and `artifacts/INDEX.md` templates from the
 framework repo (or write your own — they hold the agent protocol and
 the live epic index). The complete directory layout is documented in
-`documents/references/artifacts-layout.md`; no separate template
+`skills/tree-spec/documents/references/artifacts-layout.md`; no separate template
 directory is needed for new epics.
 
 If you skip this step, the `write-spec` skill will create the minimum
