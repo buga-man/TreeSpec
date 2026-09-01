@@ -143,11 +143,6 @@ provenance:
   created: 2026-08-31
   updated: 2026-08-31
   author: bugae + zed
-  updated_by: "G_spec closed: status draft → approved (DECISIONS.md #1)"
-  source_refs:
-    - path: ../../../../documents/phases/phase_1.md
-      anchor: "Эпик-1.1: Validation through tests"
-      original_text: "Phase 1 добавляет три новые группы тестов, не привязанные к навыку: tests/manifest/, tests/spec/, tests/router/. ≈30-50 assert'ов суммарно, tests/run-all.sh запускает их вместе с существующими per-skill тестами."
 ---
 
 ## Context

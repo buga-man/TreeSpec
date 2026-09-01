@@ -88,10 +88,6 @@ provenance:
   created: 2026-08-31
   updated: 2026-08-31
   author: bugae + zed
-  source_refs:
-    - path: ../../../../documents/phases/phase_1.md
-      anchor: "Эпик-1.2: Backward-compat gate"
-      original_text: "tests/fixtures/phase_0_manifest.toml + tests/manifest/test-backward-compat.sh. Новые правила по умолчанию обязаны проходить на phase_0 manifest. Это и есть новый DoD-3 phase 1."
 ---
 
 ## Context

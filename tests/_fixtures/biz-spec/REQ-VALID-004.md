@@ -90,10 +90,6 @@ provenance:
   created: 2026-08-31
   updated: 2026-08-31
   author: bugae + zed
-  source_refs:
-    - path: ../../../../documents/phases/phase_1.md
-      anchor: "Эпик-1.4: tree-spec-check script"
-      original_text: "scripts/tree-spec-check.sh — обёртка над bash tests/run-all.sh + быстрые checks. Режимы --manifest, --spec, --router, --all. Использует те же assert'ы, что и tests/. Размер — <100 строк bash."
 ---
 
 ## Context

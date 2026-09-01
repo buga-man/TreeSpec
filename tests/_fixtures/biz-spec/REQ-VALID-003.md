@@ -103,10 +103,6 @@ provenance:
   created: 2026-08-31
   updated: 2026-08-31
   author: bugae + zed
-  source_refs:
-    - path: ../../../../documents/phases/phase_1.md
-      anchor: "Эпик-1.3: Validation protocol doc"
-      original_text: "documents/validation.md (новый) — единственный источник истины о том, что валидируется, где, и как расширять. Структура: Маршрут валидации, Каталог проверок, Конвенция расширения, Exit semantics, Граница с phase 2."
 ---
 
 ## Context
