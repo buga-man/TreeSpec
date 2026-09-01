@@ -1,0 +1,18 @@
+# Run the *.sh test scripts under tests/ as CI.
+# tests/run-all.sh exits 0 if every script passes, 1 otherwise,
+# so this single command is both the test runner and the gate.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  shell-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run per-skill tests
+        run: bash tests/run-all.sh

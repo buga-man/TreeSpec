@@ -65,8 +65,10 @@ progresses and the contract changes.
 
 Format: `REQ-<DOMAIN>-<NNN>`
 
-- `<DOMAIN>` — **2–6 uppercase Latin letters** (e.g., `AUTH`, `API`,
-  `PAY`, `EPIC`, `CMAP`). Describes the requirement's area/domain.
+- `<DOMAIN>` — **2–8 uppercase Latin letters** (e.g., `AUTH`, `API`,
+  `PAY`, `EPIC`, `CMAP`, `TREESPEC`). Describes the requirement's
+  area/domain. Relaxed from 2–6 to 2–8 in EPIC-005 (conflict-002)
+  to accommodate the kit's self-spec `REQ-TREESPEC-001`.
 - `<NNN>` — three-digit number with leading zeros; sequential within the
   domain, **never reused** after deletion.
 
@@ -149,7 +151,7 @@ Required fields for any valid spec:
 
 | Field | Type | Constraints |
 |---|---|---|
-| `id` | string | `^REQ-[A-Z]{2,6}-\d{3}$` (see §3) |
+| `id` | string | `^REQ-[A-Z]{2,8}-\d{3}$` (see §3) |
 | `title` | string | Non-empty, recommended ≤120 characters |
 | `status` | enum | One of 4 values (see §5) |
 | `type` | enum | `feature` · `bug` · `refactor` · `chore` · `spike` · `compliance` |

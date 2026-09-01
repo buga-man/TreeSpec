@@ -6,7 +6,7 @@
 
 section "verify — contract (matches REQ-VERIFY-001)"
 
-SKILL=skills/verify/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/verify/SKILL.md
 
 # AC-1: file exists.
 assert_file_exists "$SKILL" "AC-1: skill file exists"

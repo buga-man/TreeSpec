@@ -74,7 +74,7 @@ one is missing or empty — **do not write the file**, return to brainstorm.
 
 Checks:
 
-- `id` matches `^REQ-[A-Z]{2,6}-\d{3}$`.
+- `id` matches `^REQ-[A-Z]{2,8}-\d{3}$`.
 - `id` is unique in `artifacts/global/biz-spec/`.
 - `title` non-empty, ≤120 chars.
 - `status` ∈ `{draft, approved, implemented, done}`.

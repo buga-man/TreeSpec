@@ -6,7 +6,7 @@
 
 section "intake — contract (matches REQ-INTAKE-001)"
 
-SKILL=skills/intake/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/intake/SKILL.md
 
 # AC-1: intake buffer exists with the candidate schema.
 assert_file_exists "artifacts/intake/REQUIREMENTS.md" "AC-1: intake buffer exists"
@@ -33,14 +33,23 @@ assert_grep "$SKILL" 'human confirmation|one run = one draft' "AC-5: human-gated
 # AC-6: preparation-only — no spec-file writes into biz-spec.
 assert_grep "$SKILL" 'global/biz-spec/REQ-' "AC-6: body does not write specs directly" 1 1
 
-# AC-7: manifest declares 7 skills; REQ-TREESPEC-001 revised to 7.
+# AC-7: manifest declares 7 core capabilities (plus tree-spec + init wrappers).
+# EPIC-004 (one-skill style) moved skills under skills/tree-spec/core-capabilities/
+# and added init as a bootstrap entry. The 7 capability skills remain:
+# intake, brainstorm, write-spec, plan, implement, verify, session-resume.
+# REQ-TREESPEC-001 AC-2 still says "exactly 7" — see EPIC-005 conflict-001.md.
 assert_python "
 import tomllib
 d = tomllib.load(open('__PROJECT_ROOT__/tree-spec.toml', 'rb'))
 skills = d['pipeline']['skills']
-assert len(skills) == 7, 'expected 7 skills in manifest, got ' + str(len(skills))
+core = {'intake', 'session-resume', 'brainstorm', 'write-spec', 'plan', 'implement', 'verify'}
+declared = set(skills.keys())
+missing = core - declared
+extra = declared - core - {'tree-spec', 'init'}
+assert not missing, ('core capabilities missing from [pipeline.skills]: ' + str(sorted(missing)))
+assert not extra, ('unexpected non-core skills in [pipeline.skills]: ' + str(sorted(extra)))
 print('OK')
-" "AC-7: manifest declares 7 skills"
-assert_grep "artifacts/global/biz-spec/REQ-TREESPEC-001.md" 'exactly 7' "AC-7: REQ-TREESPEC-001 says exactly 7"
+" "AC-7: manifest declares the 7 core capabilities (+ tree-spec, init)"
+assert_grep "artifacts/global/biz-spec/REQ-TREESPEC-001.md" 'exactly 7' "AC-7: REQ-TREESPEC-001 says exactly 7 (core capability skills, post-EPIC-004)"
 
 report_and_exit

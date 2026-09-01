@@ -66,7 +66,7 @@ For every requirement-like statement found in a source, produce one row:
 - **Cand-ID** — next free C-NNN (scan existing buffer rows).
 - **Text** — the requirement restated concisely and unambiguously.
 - **Source ref** — `path + anchor` (heading, item id, or line number).
-- **Domain** — 2–6 uppercase letters per the REQ domain convention; if
+- **Domain** — 2–8 uppercase letters per the REQ domain convention; if
   unclear, mark it as an open question for the human.
 - **Status** — always `candidate`.
 - **Confidence** — high / medium / low, by how directly the source states

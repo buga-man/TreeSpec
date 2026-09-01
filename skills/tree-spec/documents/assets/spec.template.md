@@ -14,7 +14,7 @@
 # ════════════════════════════════════════════════════════════════
 
 # ── L0 · REQUIRED ─────────────────────────────────────────────
-id: REQ-DOMAIN-NNN              # REQ-<DOMAIN 2–6 uppercase letters>-<3 digits>, e.g. REQ-AUTH-042
+id: REQ-DOMAIN-NNN              # REQ-<DOMAIN 2–8 uppercase letters>-<3 digits>, e.g. REQ-AUTH-042
 title: <one line>               # imperative or description, ≤120 characters
 status: draft                   # draft | approved | implemented | done
 type: feature                   # feature | bug | refactor | chore | spike | compliance
