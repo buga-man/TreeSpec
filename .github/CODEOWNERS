@@ -1,0 +1,14 @@
+# CODEOWNERS — single-owner gate
+#
+# Every PR requires approval from @buga-man before merge.
+# GitHub matches this file against the files in the PR; with the line below,
+# EVERY file is owned by @buga-man, so a review is mandatory on any change.
+#
+# To rotate ownership later, replace @buga-man here AND in SECURITY.md
+# (contact email + Discussions URL) and in .github/ISSUE_TEMPLATE/config.yml
+# (Discussions URL). Tip: list specific paths only if you want other people
+# to own them. For "only I can edit", one wildcard is enough and is the
+# safest option.
+
+# Default owner for everything in the repo
+*       @buga-man

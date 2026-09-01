@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a new skill, an AC, or a change to the pipeline contract.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      content: |
+        ## Before you file
+        - Read `tree-spec.toml` — the request may already be declared or out of contract.
+        - Specs are L0/L1 contracts, not "wouldn't it be cool". State the oracle.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What pain does this solve? Whose?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How should it work? Which stage / manifest section does it touch?
+    validations:
+      required: true
+
+  - type: textarea
+    id: oracle
+    attributes:
+      label: Acceptance criterion
+      description: "How will we know it's done? Give a measurable oracle, not 'looks right'."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission confirmations
+      options:
+        - label: "I read tree-spec.toml and the proposal does not already exist"
+        - label: "I am willing to draft the spec and PR from a fork"

@@ -1,0 +1,11 @@
+# Issue template chooser — directs users away from Issues for security
+# and casual questions. Security disclosure must go through SECURITY.md,
+# not a public issue.
+blank_issues_enabled: false
+contact_links:
+  - name: Security disclosure (responsible)
+    url: ./SECURITY.md
+    about: Please do NOT file security issues here. Follow SECURITY.md.
+  - name: Discussions / Q&A
+    url: https://github.com/buga-man/treespec-target/discussions
+    about: For questions, ideas, and casual help — not bug reports.

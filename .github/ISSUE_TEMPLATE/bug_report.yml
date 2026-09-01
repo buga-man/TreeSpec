@@ -1,0 +1,59 @@
+name: Bug report
+description: Something is wrong — a skill misbehaves, an AC oracle fails, etc.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      content: |
+        ## Before you file
+        - Reproduce on `main` (or the latest tagged release).
+        - Search existing issues — duplicates get closed.
+        - **Security issues:** follow `SECURITY.md`, do NOT file publicly.
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, agent host (Claude Code / Cursor / Windsurf / Aider / other), TreeSpec version
+      placeholder: "windows 11 / Zed / TreeSpec 0.1.0"
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run skill `X` with input `Y`
+        2. See `Z`
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      render: shell
+
+  - type: checkbox
+    id: ac
+    attributes:
+      label: AC coverage
+      description: Confirm whether this maps to a `REQ-…` spec
+      options:
+        - label: "Yes — linked spec: REQ-…"
+        - label: "No — this is a new defect"
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission confirmations
+      options:
+        - label: "I checked existing issues (no duplicate)"
+        - label: "This is not a security disclosure"
+        - label: "I am willing to send the fix as a PR from a fork"

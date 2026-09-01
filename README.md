@@ -1,8 +1,17 @@
 # TreeSpec Target — Phase 0 Dogfood
 
+[![License: OSL-3.0](https://img.shields.io/badge/License-OSL--3.0-blue.svg)](./LICENSE.md)
+[![maintained?](https://img.shields.io/badge/maintained-yes-green.svg)](./docs/REPOSITORY-PROTECTION.md)
+[![PRs welcome (from forks)](https://img.shields.io/badge/PRs-from%20forks--blueviolet.svg)](./CONTRIBUTING.md)
+
 > This repository is a **consumer** of the [TreeSpec](../) framework.
 > It exists to validate that the phase 0 kit works end-to-end by
 > **using it as the project itself**.
+>
+> **Read-only for everyone except the owner.** Direct edits are not
+> accepted — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and
+> [`docs/REPOSITORY-PROTECTION.md`](./docs/REPOSITORY-PROTECTION.md)
+> for the fork → PR flow and the GitHub-side enforcement.
 
 ## What is here
 
@@ -220,4 +229,8 @@ restructure to `skills/<id>/SKILL.md`). See
 
 ## License
 
-See `LICENSE.md`.
+See [`LICENSE.md`](./LICENSE.md) (OSL-3.0). By contributing you agree to
+these terms — see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+For security disclosures, follow [`SECURITY.md`](./SECURITY.md) — **do not**
+file security issues as public issues.
