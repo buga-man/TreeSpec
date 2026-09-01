@@ -60,14 +60,15 @@ print('OK')
 
         bad-duplicate-id.md)
             # The duplicate rule is cross-file: the fixture's id must
-            # match the real spec's id for the collision to exist. Assert
-            # both ids are equal — that's the structural condition under
-            # which the duplicate detector would fire if both files lived
-            # in artifacts/global/biz-spec/.
+            # match a committed fixture spec's id for the collision to
+            # exist. Assert both ids are equal — that's the structural
+            # condition under which the duplicate detector would fire.
+            # Uses tests/_fixtures/biz-spec/REQ-INTAKE-001.md (committed) so
+            # the synthetic harness is standalone.
             assert_python "
 import yaml, pathlib
 fx_path = pathlib.Path('__PROJECT_ROOT__/tests/fixtures/synthetic/bad-duplicate-id.md')
-real_path = pathlib.Path('__PROJECT_ROOT__/artifacts/global/biz-spec/REQ-INTAKE-001.md')
+real_path = pathlib.Path('__PROJECT_ROOT__/tests/_fixtures/biz-spec/REQ-INTAKE-001.md')
 fx_fm = yaml.safe_load(fx_path.read_text(encoding='utf-8').split('---', 2)[1])
 assert real_path.exists(), 'real spec missing — collision cannot be detected'
 real_fm = yaml.safe_load(real_path.read_text(encoding='utf-8').split('---', 2)[1])

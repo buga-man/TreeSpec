@@ -8,7 +8,7 @@
 # Each assert has a stable id (ASSERT-SPEC-NNN) so the rule catalog
 # at documents/validation.md (EPIC-007) can reference it by id.
 #
-# Coverage map (16 asserts, walks all artifacts/global/biz-spec/REQ-*.md):
+# Coverage map (16 asserts, walks all tests/_fixtures/biz-spec/REQ-*.md):
 #   001  id matches ^REQ-[A-Z]{2,8}-\d{3}$
 #   002  id unique across the directory
 #   003  title non-empty
@@ -33,7 +33,7 @@
 
 section "spec — L0 field rules (matches documents/spec-format.md §6)"
 
-SPEC_DIR="artifacts/global/biz-spec"
+SPEC_DIR="tests/_fixtures/biz-spec"
 
 # ── Load helper — yields list of (filename, frontmatter_dict) tuples ──
 # Each per-rule assert below calls _spec_load() via assert_python.
@@ -44,7 +44,7 @@ SPEC_DIR="artifacts/global/biz-spec"
 assert_python "
 import re, yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 pat = re.compile(r'^REQ-[A-Z]{2,8}-\d{3}\$')
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -59,7 +59,7 @@ assert_python "
 import yaml, pathlib
 from collections import Counter
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 ids = []
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -67,14 +67,14 @@ for f in specs:
 dups = [i for i, c in Counter(ids).items() if c > 1]
 assert not dups, f'duplicate spec ids: {dups}'
 print('OK')
-" 'ASSERT-SPEC-002: id unique across artifacts/global/biz-spec/'
+" 'ASSERT-SPEC-002: id unique across tests/_fixtures/biz-spec/'
 
 # ── Group 3: title non-empty ──────────────────────────────────
 
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     title = fm.get('title', '')
@@ -87,7 +87,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     title = fm.get('title', '')
@@ -101,7 +101,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 VALID = {'draft', 'approved', 'implemented', 'done'}
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -115,7 +115,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 VALID = {'feature', 'bug', 'refactor', 'chore', 'spike', 'compliance'}
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -129,7 +129,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 VALID = {'critical', 'high', 'medium', 'low'}
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -143,7 +143,7 @@ print('OK')
 assert_python "
 import re, yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 pat = re.compile(r'^EPIC-\d{3}-[a-z][a-z0-9-]*\$')
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -157,7 +157,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     scope_in = fm.get('scope', {}).get('in', [])
@@ -172,7 +172,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     acs = fm.get('acceptance_criteria', [])
@@ -186,7 +186,7 @@ assert_python "
 import yaml, pathlib
 from collections import Counter
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     acs = fm.get('acceptance_criteria', [])
@@ -201,7 +201,7 @@ print('OK')
 assert_python "
 import re, yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 pat = re.compile(r'^\d{4}-\d{2}-\d{2}\$')
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -215,7 +215,7 @@ print('OK')
 assert_python "
 import re, yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 pat = re.compile(r'^\d{4}-\d{2}-\d{2}\$')
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
@@ -229,7 +229,7 @@ print('OK')
 assert_python "
 import yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
     author = fm.get('provenance', {}).get('author', '')
@@ -246,7 +246,7 @@ print('OK')
 assert_python "
 import os, yaml, pathlib
 root = pathlib.Path('__PROJECT_ROOT__')
-specs = sorted((root / 'artifacts/global/biz-spec').glob('REQ-*.md'))
+specs = sorted((root / 'tests/_fixtures/biz-spec').glob('REQ-*.md'))
 checked = 0
 for f in specs:
     fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
