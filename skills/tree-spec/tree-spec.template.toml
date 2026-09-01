@@ -39,7 +39,7 @@ skills = ["intake", "brainstorm", "write-spec"]
 produces = ["spec_file", "biz_spec_delta"]
 exit_criteria = [
   "Spec file exists in the project's artifacts/global/biz-spec/",
-  "Spec passes L0 validation (id format REQ-[A-Z]{2,6}-\\d{3}, scope.in, AC, oracle)",
+  "Spec passes L0 validation (id format REQ-[A-Z]{2,8}-\\d{3}, scope.in, AC, oracle)",
   "Spec status = draft (transitions to approved after the gate)",
   "artifacts/INDEX.md has a row referencing the new spec",
 ]

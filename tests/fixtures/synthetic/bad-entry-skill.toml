@@ -1,0 +1,57 @@
+# ════════════════════════════════════════════════════════════════
+# Synthetic TOML fixture for tests/manifest/test-rules.sh and
+# tests/router/test-rules.sh negative testing.
+#
+# Only ONE rule is broken: [pipeline.stages.spec].entry_skill references
+# a skill id that does NOT exist in [pipeline.skills] — REJECT per the
+# router's "Entry skills" check (skills/tree-spec/SKILL.md § Validation,
+# check 3). All other manifest sections / fields are valid.
+#
+# This fixture exists ONLY for tests/fixtures/test-synthetic.sh; it is
+# NOT loaded by the live router or any runtime path.
+#
+# The fixture is intentionally NOT named tree-spec.toml so it cannot be
+# picked up by the live validation (which targets tree-spec.toml). The
+# synthetic test reads this file directly.
+# ════════════════════════════════════════════════════════════════
+
+[identity]
+name = "treespec-synthetic"
+version = "0.1.0"
+description = "Synthetic manifest with a broken entry_skill reference"
+owners = ["treespec-maintainers"]
+
+[kernel]
+version = "0.1.0"
+compatibility = "strict"
+
+[meta]
+language = "en"
+default_locale = "en"
+
+[pipeline]
+stage_order = ["spec"]
+default_stage = "spec"
+
+[pipeline.stages.spec]
+description = "Stage 1 — synthetic, with a bad entry_skill"
+entry_skill = "no-such-skill"     # ← violates "entry_skill ∈ [pipeline.skills]"
+skills = ["intake"]
+produces = ["spec_file"]
+exit_criteria = ["Synthetic fixture — not used at runtime"]
+exit_gate = "G_spec"
+
+[pipeline.skills.intake]
+file = "core-capabilities/intake/SKILL.md"
+classification = "hybrid"
+description = "Declared intake skill — file path is correct; only entry_skill above is broken"
+stage = "spec"
+
+[pipeline.gates.G_spec]
+description = "Synthetic gate"
+participants = [{ kind = "human", id = "owner" }]
+
+[epic]
+active = "EPIC-005-validation-through-tests"
+stage = "3"
+updated = "2026-09-01"

@@ -6,7 +6,7 @@
 
 section "plan — contract (matches REQ-PLAN-001)"
 
-SKILL=skills/plan/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/plan/SKILL.md
 
 # AC-1: file exists.
 assert_file_exists "$SKILL" "AC-1: skill file exists"

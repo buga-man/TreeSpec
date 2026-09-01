@@ -6,7 +6,7 @@
 
 section "implement — contract (matches REQ-IMPL-001)"
 
-SKILL=skills/implement/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/implement/SKILL.md
 
 # AC-1: file exists.
 assert_file_exists "$SKILL" "AC-1: skill file exists"

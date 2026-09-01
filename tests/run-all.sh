@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════
-# Run all per-skill tests in this repo.
-# Each skill has: test-structure.sh, test-contract.sh, scenarios.md.
-# We only auto-run the .sh scripts; scenarios.md are documentation.
+# Run all per-skill tests + new validation-group tests in this repo.
+#
+# Two parallel loops with different conventions:
+#
+#   SKILLS — each skill has: test-structure.sh, test-contract.sh, scenarios.md.
+#           We auto-run the .sh scripts; scenarios.md are documentation.
+#           The skill loop requires scenarios.md to exist.
+#
+#   VALIDATION_GROUPS — manifest / spec / router rule tests; only test-rules.sh.
+#                       No scenarios.md required (these aren't skill procedures).
+#                       Single test script per group.
+#
+# The synthetic harness (tests/fixtures/test-synthetic.sh) is NOT wired into
+# this runner — it runs separately (REQ-VALID-001 AC-5 + T-06 AC-6).
+#
+# Final aggregate: exits 0 iff every script (SKILLS + VALIDATION_GROUPS) exits 0.
 # ════════════════════════════════════════════════════════════════
 
 set -u
@@ -10,12 +23,18 @@ set -u
 cd "$(dirname "$0")/.." || exit 2
 
 SKILLS=(intake session-resume brainstorm write-spec plan implement verify)
+VALIDATION_GROUPS=(manifest spec router)
 
 PASS=0
 FAIL=0
 FAILED=()
 
 printf "Running per-skill tests in %s\n\n" "$(pwd)"
+
+# ── SKILLS loop ────────────────────────────────────────────────
+# Behaviour preserved bit-identical with the pre-T-07 runner. Looks
+# for test-structure.sh + test-contract.sh and requires scenarios.md
+# for each skill. Per-failure diagnostic unchanged.
 
 for skill in "${SKILLS[@]}"; do
     printf "━━━ %s ━━━\n" "$skill"
@@ -47,6 +66,34 @@ for skill in "${SKILLS[@]}"; do
     else
         printf "  ✗ %s — scenarios.md not found\n" "tests/$skill/"
         FAIL=$((FAIL + 1))
+    fi
+done
+
+# ── VALIDATION_GROUPS loop ─────────────────────────────────────
+# Additive loop. Looks only for test-rules.sh; does NOT require
+# scenarios.md (validation groups aren't skill procedures — they're
+# rule checks derived from CON-10 + the router validation procedure).
+# Per-failure diagnostic format mirrors the SKILLS loop.
+
+for group in "${VALIDATION_GROUPS[@]}"; do
+    printf "━━━ %s ━━━\n" "$group"
+
+    script="tests/$group/test-rules.sh"
+    if [ ! -f "$script" ]; then
+        printf "  ✗ %s — file not found\n" "$script"
+        FAIL=$((FAIL + 1))
+        FAILED+=("$script")
+        continue
+    fi
+
+    if bash "$script" > /tmp/test-$group-$(basename "$script" .sh).log 2>&1; then
+        printf "  ✓ %s\n" "$script"
+        PASS=$((PASS + 1))
+    else
+        printf "  ✗ %s\n" "$script"
+        cat /tmp/test-$group-$(basename "$script" .sh).log
+        FAIL=$((FAIL + 1))
+        FAILED+=("$script")
     fi
 done
 

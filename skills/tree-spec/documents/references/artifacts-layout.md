@@ -68,7 +68,7 @@ them (`intake`, `plan`), not at bootstrap. The bootstrap minimum is the
 ## Naming conventions
 
 - Epic folder: `EPIC-NNN-<slug>` (zero-padded number, lowercase kebab-case slug).
-- Spec id: `REQ-<DOMAIN>-<NNN>` (2–6 uppercase letters per `documents/spec-format.md`).
+- Spec id: `REQ-<DOMAIN>-<NNN>` (2–8 uppercase letters per `documents/spec-format.md`).
 - Conflict doc: `conflict-NNN.md` (sequential inside the epic).
 - Report: `report-NN.md` (per task in stage 3, sequential).
 - Decisions / PATH: append-only; never rewrite history; corrections are new entries referencing the old.

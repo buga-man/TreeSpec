@@ -6,7 +6,7 @@
 
 section "brainstorm — contract (matches REQ-BRAIN-001)"
 
-SKILL=skills/brainstorm/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/brainstorm/SKILL.md
 
 # AC-1: file exists.
 assert_file_exists "$SKILL" "AC-1: skill file exists"

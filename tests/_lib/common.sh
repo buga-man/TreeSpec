@@ -121,28 +121,41 @@ assert_python() {
 
 assert_toml_field() {
     # assert_toml_field <toml_file> <dotted_path> <name> [expected_value]
+    # Existence-only (no expected_value) uses the python exit code — never
+    # stdout — to avoid Windows console encoding crashes when the resolved
+    # value contains non-ASCII characters (e.g., '→' in stage descriptions).
     local file="$1" path="$2" name="$3" expected="${4:-}"
     local full="$TESTS_PROJECT_ROOT/$file"
     if [ ! -f "$full" ]; then
         _log_fail "$name" "TOML file not found: $file"
         return
     fi
-    local actual
-    actual=$(python -c "
-import tomllib, sys
+    if [ -n "$expected" ]; then
+        # Compare actual value to expected — capture stdout (rare path;
+        # callers should prefer assert_python for non-ASCII-tolerant checks).
+        local actual
+        actual=$(PYTHONIOENCODING=utf-8 python -c "
+import sys, tomllib
 d = tomllib.load(open(sys.argv[1], 'rb'))
 for k in sys.argv[2].split('.'):
     d = d[k]
-print(d)
+sys.stdout.write(repr(d))
 " "$full" "$path" 2>/dev/null) || actual="<error>"
-    if [ -n "$expected" ]; then
         if [ "$actual" = "$expected" ]; then
             _log_pass "$name"
         else
             _log_fail "$name" "expected '$expected', got '$actual' at $path"
         fi
     else
-        if [ "$actual" != "<error>" ] && [ -n "$actual" ]; then
+        # Existence check — use python exit code only. Avoids encoding
+        # crashes; covers keys whose values include any unicode.
+        if PYTHONIOENCODING=utf-8 python -c "
+import sys, tomllib
+d = tomllib.load(open(sys.argv[1], 'rb'))
+for k in sys.argv[2].split('.'):
+    d = d[k]
+sys.exit(0)
+" "$full" "$path" 2>/dev/null; then
             _log_pass "$name"
         else
             _log_fail "$name" "could not read $path in $file"

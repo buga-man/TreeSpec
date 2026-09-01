@@ -7,7 +7,7 @@
 
 section "session-resume — contract (matches REQ-RESUME-001)"
 
-SKILL=skills/session-resume/SKILL.md
+SKILL=skills/tree-spec/core-capabilities/session-resume/SKILL.md
 
 # AC-1: skill file exists at the declared path.
 assert_file_exists "$SKILL" "AC-1: skill file exists"
@@ -18,8 +18,10 @@ assert_grep "$SKILL" 'composition: \[\]' "AC-2: composition=[] present"
 
 # AC-3: side_effects declare only read operations.
 assert_grep "$SKILL" '^side_effects:' "AC-3: side_effects section exists"
-# Strong negative: no "writes" / "creates a file" / "deletes" mentions.
-assert_grep "$SKILL" '\b(writes|creates a file|deletes)\b' "AC-3: no write-side-effect keywords" 1 1
+# Strong negative: no imperative write-side-effect phrases.
+# (Bare "writes" is excluded — it matches denial context like "never writes
+# to canonical English".) Phrases below target concrete file mutations only.
+assert_grep "$SKILL" '(creates a file|deletes |writes (a|the|to) (file|disk|filesystem|artifacts?|specs?))' "AC-3: no write-side-effect keywords" 1 1
 
 # AC-4: procedure has at least 5 steps.
 assert_grep "$SKILL" '^### Step' "AC-4: procedure has at least 5 numbered steps" 5
