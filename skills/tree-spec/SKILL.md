@@ -27,6 +27,10 @@ failure_handling:
 
 composition:
   - may_invoke: [init, session-resume]  # explicit only — routing is not implicit composition (invariant 6)
+# ── SOURCE OF TRUTH (concepts) ──────────────────────────────────
+#   - ../../documents/validation.md          # what is validated, where, how to extend
+#   - ../../documents/spec-format.md         # spec L0 fields
+#   - tree-spec.toml                         # the manifest / contract
 # Language (REQ-I18N-001): this skill's human-readable artifact prose
 # follows the active language; identifiers, field names, paths, and
 # verification commands/oracles stay canonical English.
