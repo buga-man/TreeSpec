@@ -1,0 +1,89 @@
+# ════════════════════════════════════════════════════════════════
+# TreeSpec — Project Manifest v0.1
+# Framework-repo canonical (phase_0).
+#
+# This is the frozen backward-compat baseline. Do NOT edit in place —
+# freezing lives in tests/fixtures/phase_0_manifest.toml. A new manifest
+# rule that breaks this file is a breaking change (DoD-3 phase 1,
+# REQ-VALID-002 / EPIC-006).
+#
+# Phase-0 schema — predates v0.2 additions:
+#   * no [meta]              (i18n, EPIC-003 / phase 1)
+#   * no [epic]              (machine-maintained pointer, EPIC-004)
+#   * manifest-relative skill paths (no router skill entry)
+# ════════════════════════════════════════════════════════════════
+
+[identity]
+name = "treespec"
+version = "0.1.0"
+description = "TreeSpec kernel — the kit validated by dogfooding as its own target."
+owners = ["treespec-maintainers"]
+
+[kernel]
+version = "0.1.0"
+compatibility = "strict"
+
+[pipeline]
+stage_order = ["spec", "plan", "implement", "verify"]
+default_stage = "spec"
+
+[pipeline.stages.spec]
+description = "Define what the system should do: business + system analysis"
+entry_skill = "intake"
+
+[pipeline.stages.plan]
+description = "Decompose the analysis into tasks and plan verification"
+entry_skill = "plan"
+
+[pipeline.stages.implement]
+description = "Implement and verify, one task per session"
+entry_skill = "implement"
+
+[pipeline.stages.verify]
+description = "Run all tests; fail on any failure"
+entry_skill = "verify"
+
+[pipeline.skills.intake]
+file = "skills/intake/SKILL.md"
+classification = "hybrid"
+description = "Turn a request into a written intake spec and a raw buffer"
+entry = true
+stage = "spec"
+
+[pipeline.skills.plan]
+file = "skills/plan/SKILL.md"
+classification = "hybrid"
+description = "Turn an analysis into a task list, feasibility note, and plan"
+stage = "plan"
+
+[pipeline.skills.implement]
+file = "skills/implement/SKILL.md"
+classification = "hybrid"
+description = "Turn a task into a change with tests and a report"
+stage = "implement"
+
+[pipeline.skills.verify]
+file = "skills/verify/SKILL.md"
+classification = "hybrid"
+description = "Run the full suite and fail on any failure"
+stage = "verify"
+
+[pipeline.gates.G_spec]
+description = "Spec approved by human: all L0 fields filled, AC with oracles"
+participants = [{ kind = "human", id = "owner" }]
+
+[pipeline.gates.G_plan]
+description = "Plan approved by human: tasks agreed, complexity adjusted"
+participants = [{ kind = "human", id = "owner" }]
+
+[pipeline.gates.G_done]
+description = "Verification accepted by human: oracles passed, evidence captured"
+participants = [
+  { kind = "human", id = "owner" },
+]
+
+[pipeline.evaluation]
+claim_verify = "mandatory — every report has claim + verify parts"
+scope_respect = "scope.in only; scope.out is taboo"
+conflict_handling = "open conflict docs block stage progression"
+history_append_only = "PATH.md and DECISIONS.md are append-only"

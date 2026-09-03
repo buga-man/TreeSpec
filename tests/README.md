@@ -131,8 +131,10 @@ asserts against the relevant artifacts:
 
 Each assert has a stable id (e.g. `ASSERT-MANIFEST-001`,
 `ASSERT-SPEC-NNN`, `ASSERT-ROUTER-NNN`) so the **rule catalog** at
-`documents/validation.md` (EPIC-007, not yet written — placeholder)
-can reference each rule by id.
+[`documents/validation.md`](../documents/validation.md) can reference
+each rule by id. That catalog is the single source of truth for what
+each assert checks and its source of truth; the assert names here are
+self-documenting shadows of those rows.
 
 ### Synthetic harness (`tests/fixtures/test-synthetic.sh`)
 
@@ -167,6 +169,12 @@ bash tests/router/test-rules.sh
 bash tests/fixtures/test-synthetic.sh
 # exits 0 if every fixture triggers its expected rule
 # exits 1 with a named diagnostic if any rule slipped through
+
+# Pre-flight a single area (EPIC-008 / REQ-VALID-004); fast, stdlib-only.
+bash skills/tree-spec/scripts/tree-spec-check.sh --manifest
+bash skills/tree-spec/scripts/tree-spec-check.sh --spec
+bash skills/tree-spec/scripts/tree-spec-check.sh --router
+# (no flag or --all) runs the same battery as tests/run-all.sh
 ```
 
 `run-all.sh` exits 0 if all tests pass, 1 otherwise. The list of
@@ -175,13 +183,15 @@ failed tests is printed at the end.
 ## Catalog
 
 The exhaustive catalog of all per-rule assertions lives at
-`documents/validation.md` (EPIC-007; **not yet written at the
-time of EPIC-005** — placeholder link). Once that catalog lands,
-each assertion in `tests/{manifest,spec,router}/test-rules.sh`
-has a stable id (`ASSERT-<GROUP>-NNN`) that the catalog references.
+[`documents/validation.md`](../documents/validation.md) (EPIC-007,
+REQ-VALID-003) — the canonical single source of truth for what is
+validated, where, and how to extend it. It is the canonical
+description of what `tests/run-all.sh` validates (REQ-VALID-003 AC-4).
 
-Until then, the assertions are self-documenting via their assertion
-names (printed on pass/fail by `tests/_lib/common.sh`).
+Each assertion in `tests/{manifest,spec,router}/test-rules.sh` has a
+stable id (`ASSERT-<GROUP>-NNN`) referenced by that catalog. The
+assertion names here remain self-documenting: they are printed on
+pass/fail by `tests/_lib/common.sh`.
 
 ## What this is NOT
 
@@ -209,7 +219,8 @@ names (printed on pass/fail by `tests/_lib/common.sh`).
   `printf -v`).
 - Every assertion in the per-rule tests has a stable id
   (`ASSERT-<GROUP>-NNN`) printed in the assertion name. The catalog
-  at `documents/validation.md` (EPIC-007) references these by id.
+  at [`documents/validation.md`](../documents/validation.md) references
+  these by id.
 - The synthetic harness inverts normal assertion semantics: a rule
   correctly rejecting a fixture is a PASS (the rule fired). A rule
   accepting a fixture is a FAIL (false negative — the rule design

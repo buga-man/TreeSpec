@@ -48,6 +48,12 @@ gate G_done [Human].
 
 ## Procedure
 
+> **Pre-flight:** before running oracles, a quick per-area check catches
+> drift fast —
+> `skills/tree-spec/scripts/tree-spec-check.sh --<area>` (or
+> `--all`). Same asserts as `tests/`, matches `tests/run-all.sh` exit
+> codes (REQ-VALID-004 / EPIC-008).
+
 ### Step 1. Context
 
 Read:

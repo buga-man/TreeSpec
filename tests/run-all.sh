@@ -97,6 +97,30 @@ for group in "${VALIDATION_GROUPS[@]}"; do
     fi
 done
 
+# ── BACKWARD_COMPAT group (REQ-VALID-002 / EPIC-006, DoD-3 phase 1) ─
+# A frozen phase_0 manifest fixture is guarded by
+# tests/manifest/test-backward-compat.sh. Any new manifest rule that
+# breaks the fixture (would silently cut off pre-v0.2 consumers) must be
+# deferred, opted in via [kernel].compatibility='lenient', or
+# accompanied by migration notes. Its exit code aggregates with the rest.
+
+printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "backward-compat\n"
+bwc_script="tests/manifest/test-backward-compat.sh"
+if [ ! -f "$bwc_script" ]; then
+    printf "  ✗ %s — file not found\n" "$bwc_script"
+    FAIL=$((FAIL + 1))
+    FAILED+=("$bwc_script")
+elif bash "$bwc_script" > /tmp/test-bwc-$(basename "$bwc_script" .sh).log 2>&1; then
+    printf "  ✓ %s\n" "$bwc_script"
+    PASS=$((PASS + 1))
+else
+    printf "  ✗ %s\n" "$bwc_script"
+    cat /tmp/test-bwc-$(basename "$bwc_script" .sh).log
+    FAIL=$((FAIL + 1))
+    FAILED+=("$bwc_script")
+fi
+
 printf "\n════════════════════════════════════════════════════════════════\n"
 printf "Result: %d passed, %d failed\n" "$PASS" "$FAIL"
 

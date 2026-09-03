@@ -83,6 +83,11 @@ Rules:
 - **Do not deploy** to production without explicit approval (if L2 `forbidden_actions`).
 - **No magic values** — all numbers / strings through named constants.
 
+After editing a manifest or spec section, pre-flight the changed area
+with `skills/tree-spec/scripts/tree-spec-check.sh --<area>` (or `--all`)
+before writing the report — drift is caught before it becomes a report
+(REQ-VALID-004 / EPIC-008).
+
 ### Step 4. Claim/Verify report
 
 Create `artifacts/epics/<EPIC>/docs/report-NN.md` per the template
