@@ -2,12 +2,12 @@
 # TreeSpec target repo — REQ-VALID-002
 # Phase 1 / Epic-1.2: Backward-compat gate.
 # Source: documents/phases/phase_1.md § "Что строим / 2. Backward-compat fixture" + § "DoD phase 1 #3".
-# Status: draft (awaiting G_spec).
+# Status: approved (G_spec closed 2026-09-02, EPIC-006 DECISIONS.md #1).
 
 # ── L0 · REQUIRED ─────────────────────────────────────────────
 id: REQ-VALID-002
 title: Backward-compatibility gate via phase_0 manifest fixture
-status: draft
+status: approved
 type: feature
 priority: high
 
@@ -86,7 +86,7 @@ acceptance_criteria:
 
 provenance:
   created: 2026-08-31
-  updated: 2026-08-31
+  updated: 2026-09-02
   author: bugae + zed
 ---
 
