@@ -169,6 +169,12 @@ bash tests/router/test-rules.sh
 bash tests/fixtures/test-synthetic.sh
 # exits 0 if every fixture triggers its expected rule
 # exits 1 with a named diagnostic if any rule slipped through
+
+# Pre-flight a single area (EPIC-008 / REQ-VALID-004); fast, stdlib-only.
+bash skills/tree-spec/scripts/tree-spec-check.sh --manifest
+bash skills/tree-spec/scripts/tree-spec-check.sh --spec
+bash skills/tree-spec/scripts/tree-spec-check.sh --router
+# (no flag or --all) runs the same battery as tests/run-all.sh
 ```
 
 `run-all.sh` exits 0 if all tests pass, 1 otherwise. The list of

@@ -97,6 +97,21 @@ check** — do **not** route to any capability (AC-4, AC-5):
 If validation passes, continue to Step 3. Never silently regenerate or
 "fix" a failed contract — report and stop (AC-5, forbidden list).
 
+## Pre-flight (fast per-area checks)
+
+For a targeted edit — a manifest section, a spec fix — pre-flight one
+area before the full battery or CI. The wrapper wraps the same asserts as
+`tests/`, so the two never disagree:
+
+```bash
+skills/tree-spec/scripts/tree-spec-check.sh --manifest
+skills/tree-spec/scripts/tree-spec-check.sh --spec
+skills/tree-spec/scripts/tree-spec-check.sh --router
+```
+
+`--all` (or no flag) runs every group and matches
+`bash tests/run-all.sh` exit-code semantics (REQ-VALID-004 / EPIC-008).
+
 ## Capabilities
 
 | Capability | Owns |
