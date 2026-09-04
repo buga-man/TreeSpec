@@ -126,6 +126,9 @@ exit_gate = "G_done"
 [pipeline.skills.tree-spec]
 file = "SKILL.md"
 classification = "hybrid"
+reproducibility = "strict"        # deterministic state-based routing + judgement
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "Registrar/router: startup, validation, session-resume, dispatch"
 entry = true                          # the front door; runs at any session start
 stage = "any"
@@ -133,48 +136,72 @@ stage = "any"
 [pipeline.skills.init]
 file = "core-capabilities/init/SKILL.md"
 classification = "hybrid"
+reproducibility = "best-effort"   # structure deterministic, bootstrap steps vary
+execution_mode = "single"
+flaky_tolerance = 0.1
 description = "Bootstrap: manifest (from template) + artifacts/ skeleton"
 stage = "any"
 
 [pipeline.skills.session-resume]
 file = "core-capabilities/session-resume/SKILL.md"
 classification = "pure"
+reproducibility = "strict"        # read-only, deterministic
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "Read-only state recovery + next-action recommendation"
 stage = "any"
 
 [pipeline.skills.intake]
 file = "core-capabilities/intake/SKILL.md"
 classification = "hybrid"
+reproducibility = "best-effort"   # source analysis carries judgement
+execution_mode = "single"
+flaky_tolerance = 0.1
 description = "Raw sources → candidate buffer"
 stage = "spec"
 
 [pipeline.skills.brainstorm]
 file = "core-capabilities/brainstorm/SKILL.md"
 classification = "stochastic"
+reproducibility = "none"          # no verifiable selection criterion → single + fixed seed
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "L0 spec draft"
 stage = "spec"
 
 [pipeline.skills.write-spec]
 file = "core-capabilities/write-spec/SKILL.md"
 classification = "stochastic"
+reproducibility = "none"          # no verifiable selection criterion → single + fixed seed
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "Write + register spec"
 stage = "spec"
 
 [pipeline.skills.plan]
 file = "core-capabilities/plan/SKILL.md"
 classification = "hybrid"
+reproducibility = "best-effort"   # structure deterministic, estimates stochastic
+execution_mode = "single"
+flaky_tolerance = 0.1
 description = "Decompose approved spec into tasks + feasibility"
 stage = "plan"
 
 [pipeline.skills.implement]
 file = "core-capabilities/implement/SKILL.md"
 classification = "hybrid"
+reproducibility = "strict"        # deterministic structure + judgement on identity fields
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "Implement one task per session with claim/verify report"
 stage = "implement"
 
 [pipeline.skills.verify]
 file = "core-capabilities/verify/SKILL.md"
 classification = "pure"
+reproducibility = "strict"        # deterministically executes oracles
+execution_mode = "single"
+flaky_tolerance = 0.0
 description = "Run AC oracles, capture evidence, surface FAILs"
 stage = "verify"
 
@@ -218,9 +245,9 @@ participants = [
 # start by the router. Never hand-edited. On divergence artifacts win and
 # a warning is recorded (REQ-PACK-001 AC-6).
 [epic]
-active = "EPIC-004-skill-packaging"
-stage = "2"
-updated = "2026-08-31"
+active = "EPIC-009-skill-classification-schema"    # Phase 4 CON-14 — first initialized epic (done)
+stage = "4"                           # "" | 1 | 2 | 3 | 4 | closed
+updated = "2026-09-03"              # router sets the last-updated date
 
 # ── GOVERNANCE · deferred to phase 2+ ────────────────────────────
 # Will appear once the pain arrives: gate timeouts, escalation policy,

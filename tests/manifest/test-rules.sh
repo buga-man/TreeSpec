@@ -9,7 +9,7 @@
 # Each assert has a stable id (ASSERT-MANIFEST-NNN) so the rule
 # catalog at documents/validation.md (EPIC-007) can reference it.
 #
-# Coverage map (16 asserts):
+# Coverage map (18 asserts):
 #   001..007  7 required sections
 #   008       [kernel].version matches semver (phase 0 strict)
 #   009       [identity].name matches kebab-case
@@ -20,14 +20,19 @@
 #   014       [meta].language ∈ {en, ru}
 #   015       [pipeline.evaluation] present (extra user-owned section)
 #   016       tests/manifest/ is stdlib-only (REQ-VALID-001 AC-7)
+#   017       [pipeline.skills.*] declares all four classification fields
+#             (REQ-EXEC-001 AC-1 / EPIC-009 / T-02) — v0.2-era
+#   018       classification enum + flaky_tolerance fraction (REQ-EXEC-001
+#             AC-2 / EPIC-009 / T-02) — v0.2-era
 #
 # Schema awareness (REQ-VALID-002 / EPIC-006): this suite runs against
 # any manifest chosen by $TESTS_MANIFEST (default: tree-spec.toml at the
 # project root). A v0.2 manifest declares [pipeline.skills.tree-spec];
 # older (pre-v0.2) manifests do not. The four v0.2-era asserts
-# (003, 010, 013, 014) are reported as an explicit SKIP with reason on
-# pre-v0.2 manifests instead of failing — the deferral mandated by
-# DoD-3 phase 1. Skips never affect the exit code.
+# (003, 010, 013, 014, 017, 018) are reported as an explicit SKIP with
+# reason on pre-v0.2 manifests instead of failing — the deferral mandated
+# by DoD-3 phase 1. The v0.2-era classification asserts (017, 018) skip on
+# the frozen phase_0 fixture so the backward-compat gate is preserved. Skips never affect the exit code.
 #
 # The python asserts read the manifest path from the exported env
 # (TESTS_PROJECT_ROOT + TESTS_MANIFEST); schema and the per-assert skip
@@ -47,21 +52,22 @@ else
 fi
 export SKIP_SCHEMA="$MANIFEST_SCHEMA"
 
-# Absolute path to the chosen manifest, injected into the python asserts.
-MANIFEST_PATH="$TESTS_PROJECT_ROOT/$TESTS_MANIFEST"
+# Absolute path to the chosen manifest is assembled inline per-assert via
+# $TESTS_PROJECT_ROOT / $TESTS_MANIFEST (exported in common.sh); no
+# standalone MANIFEST_PATH binding is needed.
 
 # ── Group 1: 7 required sections ──────────────────────────────
 # Each assert confirms the TOML table path exists. tomllib walks
 # `d['pipeline']['stages']` etc.; missing parents raise KeyError, the
 # helper captures the error and counts it as a failure.
 
-assert_toml_field "$TESTS_MANIFEST" "identity"         "ASSERT-MANIFEST-001: [identity] present"
-assert_toml_field "$TESTS_MANIFEST" "kernel"           "ASSERT-MANIFEST-002: [kernel] present"
-assert_toml_field "$TESTS_MANIFEST" "meta"         "ASSERT-MANIFEST-003: [meta] present"        "" "v0.1"
-assert_toml_field "$TESTS_MANIFEST" "pipeline"         "ASSERT-MANIFEST-004: [pipeline] present"
-assert_toml_field "$TESTS_MANIFEST" "pipeline.stages"  "ASSERT-MANIFEST-005: [pipeline.stages] present"
-assert_toml_field "$TESTS_MANIFEST" "pipeline.skills"  "ASSERT-MANIFEST-006: [pipeline.skills] present"
-assert_toml_field "$TESTS_MANIFEST" "pipeline.gates"   "ASSERT-MANIFEST-007: [pipeline.gates] present"
+assert_toml_field "$TESTS_MANIFEST" "identity" "ASSERT-MANIFEST-001: [identity] present"
+assert_toml_field "$TESTS_MANIFEST" "kernel" "ASSERT-MANIFEST-002: [kernel] present"
+assert_toml_field "$TESTS_MANIFEST" "meta" "ASSERT-MANIFEST-003: [meta] present" "" "v0.1"
+assert_toml_field "$TESTS_MANIFEST" "pipeline" "ASSERT-MANIFEST-004: [pipeline] present"
+assert_toml_field "$TESTS_MANIFEST" "pipeline.stages" "ASSERT-MANIFEST-005: [pipeline.stages] present"
+assert_toml_field "$TESTS_MANIFEST" "pipeline.skills" "ASSERT-MANIFEST-006: [pipeline.skills] present"
+assert_toml_field "$TESTS_MANIFEST" "pipeline.gates" "ASSERT-MANIFEST-007: [pipeline.gates] present"
 
 # ── Group 2: kernel.version semver (phase 0 strict) ───────────
 
@@ -158,6 +164,46 @@ print('OK')
 
 assert_toml_field "$TESTS_MANIFEST" "pipeline.evaluation" "ASSERT-MANIFEST-015: [pipeline.evaluation] present (user-owned cross-cutting)"
 
+# ── Group 10: skill classification fields (REQ-EXEC-001 / EPIC-009) ─
+# Every [pipeline.skills.<id>] entry must declare the four classification
+# fields (REQ-EXEC-001 scope.in #1): classification, reproducibility,
+# execution_mode, flaky_tolerance. Enforced by validate (AC-1, AC-2).
+# v0.2-era asserts: SKIP on pre-v0.2 manifests (classification schema
+# postdates the frozen phase_0 fixture), so the backward-compat gate is
+# preserved (REQ-VALID-002 / EPIC-006). SKIP_IF_SCHEMA="v0.1".
+
+assert_python "
+import os, tomllib
+mf = os.path.join(os.environ['TESTS_PROJECT_ROOT'], os.environ['TESTS_MANIFEST'])
+d = tomllib.load(open(mf, 'rb'))
+fields = ['classification', 'reproducibility', 'execution_mode', 'flaky_tolerance']
+skills = d.get('pipeline', {}).get('skills', {})
+for sid, sdata in skills.items():
+    for f in fields:
+        assert f in sdata, 'skill ' + repr(sid) + ': missing classification field ' + repr(f)
+        assert sdata[f] is not None and sdata[f] != '', 'skill ' + repr(sid) + ': classification field ' + repr(f) + ' is empty'
+print('OK')
+" "ASSERT-MANIFEST-017: every [pipeline.skills.*] declares all four classification fields (name+field on missing)" "" "v0.1"
+
+assert_python "
+import os, tomllib
+mf = os.path.join(os.environ['TESTS_PROJECT_ROOT'], os.environ['TESTS_MANIFEST'])
+d = tomllib.load(open(mf, 'rb'))
+ENUMS = {
+    'classification': {'pure', 'stochastic', 'hybrid'},
+    'reproducibility': {'strict', 'best-effort', 'none'},
+    'execution_mode': {'single', 'best-of-n', 'consensus'},
+}
+skills = d.get('pipeline', {}).get('skills', {})
+for sid, sdata in skills.items():
+    for f, allowed in ENUMS.items():
+        v = sdata.get(f)
+        assert v in allowed, 'skill ' + repr(sid) + ': ' + f + '=' + repr(v) + ' not in ' + str(sorted(allowed))
+    ft = sdata.get('flaky_tolerance')
+    assert isinstance(ft, (int, float)) and not isinstance(ft, bool) and 0.0 <= ft <= 1.0, 'skill ' + repr(sid) + ': flaky_tolerance=' + repr(ft) + ' is not a fraction in [0,1]'
+print('OK')
+" "ASSERT-MANIFEST-018: classification enum values valid + flaky_tolerance is a fraction in [0,1] (names rejected value)" "" "v0.1"
+
 # ── AC-7 stdlib guard ─────────────────────────────────────────
 # AC-7 of REQ-VALID-001 forbids `pip install` / `requirements.txt`
 # anywhere in this group. Assert it locally so a future contributor
@@ -171,7 +217,7 @@ assert_toml_field "$TESTS_MANIFEST" "pipeline.evaluation" "ASSERT-MANIFEST-015: 
 
 if grep -rE 'pip install|requirements\.txt' tests/manifest --exclude='test-rules.sh' 2>/dev/null; then
     _log_fail "ASSERT-MANIFEST-016: tests/manifest/ contains no 'pip install' or 'requirements.txt' (REQ-VALID-001 AC-7)" \
-              "remove external dependency, REQ-VALID-001 AC-7 is stdlib-only"
+        "remove external dependency, REQ-VALID-001 AC-7 is stdlib-only"
 else
     _log_pass "ASSERT-MANIFEST-016: tests/manifest/ contains no 'pip install' or 'requirements.txt' (REQ-VALID-001 AC-7)"
 fi

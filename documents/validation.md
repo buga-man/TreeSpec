@@ -88,7 +88,7 @@ Every script in `tests/{manifest,spec,router}` is referenced at least
 here (route) and below (catalog), so the catalog is self-indexing.
 
 | # | Script | Runs | Severity |
-|---|--------|------|----------|
+| --- | -------- | ------ | ---------- |
 | 1 | `tests/manifest/test-rules.sh` | manifest v0.2 rule assertions | FAIL |
 | 2 | `tests/manifest/test-backward-compat.sh` | phase_0 manifest gate (REQ-VALID-002) | FAIL |
 | 3 | `tests/spec/test-rules.sh` | spec L0 field rule assertions | FAIL |
@@ -105,15 +105,16 @@ Source: `skills/tree-spec/documents/spec-format.md` (field grammar) +
 Coverage map: 001–007 required sections; 008 `kernel.version` semver;
 009 `identity.name` kebab; 010 `skills.*.file` resolves; 011 stage
 `entry_skill ∈ skills`; 012 gate skill participant; 013 `[epic]` present;
-014 `[meta].language` whitelist; 015 `evaluation` present; 016 stdlib
-guard.
+014 `[meta].language` whitelist; 015 `evaluation` present; 016–017
+classification schema (REQ-EXEC-001 / EPIC-009): 016 four fields present,
+017 enum + flaky_tolerance fraction; 018 stdlib guard.
 
 Schema awareness (REQ-VALID-002 / EPIC-006): asserts 003, 010, 013, 014
 are v0.2-era; on a pre-v0.2 manifest they report an explicit `WARN`
 SKIP with reason and never affect the exit code.
 
 | # | Assertion | Rule | Source of truth | test location | Sev |
-|---|-----------|------|-----------------|---------------|-----|
+| --- | ----------- | ------ | ----------------- | --------------- | ----- |
 | M-001 | `identity` present | `[identity]` required section | `spec-format.md §6` / CON-10 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-001` | FAIL |
 | M-002 | `kernel` present | `[kernel]` required section | CON-10 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-002` | FAIL |
 | M-003 | `meta` present | `[meta]` required section | CON-10 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-003` | FAIL (v0.2) |
@@ -130,6 +131,8 @@ SKIP with reason and never affect the exit code.
 | M-014 | `[meta].language` whitelist | `en` or `ru` | `spec-format.md §8` | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-014` | FAIL (v0.2) |
 | M-015 | `evaluation` present | user-owned cross-cutting section present | CON-10 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-015` | FAIL |
 | M-016 | stdlib guard | no `pip install` / `requirements.txt` in `tests/manifest/` | REQ-VALID-001 AC-7 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-016` | FAIL |
+| M-017 | four classification fields present | every `[pipeline.skills.<id>]` declares `classification`, `reproducibility`, `execution_mode`, `flaky_tolerance` (non-empty); names skill + field on missing | REQ-EXEC-001 AC-1 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-017` | FAIL (v0.2) |
+| M-018 | classification enum + flaky_tolerance fraction | `classification ∈ {pure,stochastic,hybrid}`, `reproducibility ∈ {strict,best-effort,none}`, `execution_mode ∈ {single,best-of-n,consensus}`, `flaky_tolerance` a fraction in [0,1]; names rejected value | REQ-EXEC-001 AC-2 | `tests/manifest/test-rules.sh` `ASSERT-MANIFEST-018` | FAIL (v0.2) |
 
 ### Backward-compat gate — `tests/manifest/test-backward-compat.sh`
 
@@ -147,7 +150,7 @@ Source: `skills/tree-spec/documents/spec-format.md §6` (L0 fields).
 Coverage map walks every `tests/_fixtures/biz-spec/REQ-*.md`.
 
 | # | Assertion | Rule | Source of truth | test location | Sev |
-|---|-----------|------|-----------------|---------------|-----|
+| --- | ----------- | ------ | ----------------- | --------------- | ----- |
 | S-001 | id regex | `^REQ-[A-Z]{2,8}-\d{3}$` | `spec-format.md §3` | `tests/spec/test-rules.sh` `ASSERT-SPEC-001` | FAIL |
 | S-002 | id unique | id unique across the directory | `spec-format.md §3` | `tests/spec/test-rules.sh` `ASSERT-SPEC-002` | FAIL |
 | S-003 | title non-empty | `title` non-empty string | `spec-format.md §6` | `tests/spec/test-rules.sh` `ASSERT-SPEC-003` | FAIL |
@@ -172,7 +175,7 @@ Mechanical mirror of the router's 4 documented checks
 verbatim from the source.
 
 | # | Assertion | Rule | Source of truth | test location | Sev |
-|---|-----------|------|-----------------|---------------|-----|
+| --- | ----------- | ------ | ----------------- | --------------- | ----- |
 | R-001 | kernel version | `[kernel].version` matches `^0\.1\.[0-9]+(-[A-Za-z0-9.-]+)?$` | `SKILL.md § Validation` | `tests/router/test-rules.sh` `ASSERT-ROUTER-001` | FAIL (fail-closed) |
 | R-002 | file paths | every `[pipeline.skills.*].file` resolves under `skills/tree-spec/` | `SKILL.md Manifest v0.2 resolution` | `tests/router/test-rules.sh` `ASSERT-ROUTER-002` | FAIL (fail-closed) |
 | R-003 | entry skills | every stage's `entry_skill ∈ stage.skills AND ∈ [pipeline.skills]` | `SKILL.md § Capabilities` | `tests/router/test-rules.sh` `ASSERT-ROUTER-003` | FAIL (fail-closed) |

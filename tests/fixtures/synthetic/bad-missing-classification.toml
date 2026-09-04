@@ -1,0 +1,63 @@
+# ════════════════════════════════════════════════════════════════
+# Synthetic TOML fixture for tests/manifest/test-rules.sh negative
+# testing (REQ-VALID-001 AC-5 / EPIC-009).
+#
+# Only ONE rule is broken: [pipeline.skills.brainstorm] is missing the
+# reproducibility classification field — REJECT per ASSERT-MANIFEST-017
+# (REQ-EXEC-001 scope.in: validate fails on a missing classification
+# field and names the skill + field).
+#
+# The manifest is v0.2 schema (declares [pipeline.skills.tree-spec]) so
+# the v0.2-era classification asserts are NOT skipped. All other fields
+# are valid.
+#
+# This fixture exists ONLY for tests/fixtures/test-synthetic.sh; it is
+# NOT loaded by the live router or any runtime path.
+# ════════════════════════════════════════════════════════════════
+
+[identity]
+name = "treespec-synthetic"
+version = "0.1.0"
+description = "Synthetic manifest with a skill missing a classification field"
+owners = ["treespec-maintainers"]
+
+[kernel]
+version = "0.1.0"
+compatibility = "strict"
+
+[meta]
+language = "en"
+default_locale = "en"
+
+[pipeline]
+stage_order = ["spec"]
+default_stage = "spec"
+
+[pipeline.stages.spec]
+description = "Stage 1 — synthetic"
+entry_skill = "tree-spec"
+
+[pipeline.skills.tree-spec]
+file = "SKILL.md"
+classification = "hybrid"
+reproducibility = "strict"
+execution_mode = "single"
+flaky_tolerance = 0.0
+description = "Declared router skill — all four classification fields present"
+stage = "any"
+
+[pipeline.skills.brainstorm]
+file = "core-capabilities/brainstorm/SKILL.md"
+classification = "stochastic"
+# ← reproducibility / execution_mode / flaky_tolerance MISSING
+description = "Declared brainstorm skill — missing the reproducibility field"
+stage = "spec"
+
+[pipeline.gates.G_spec]
+description = "Synthetic gate"
+participants = [{ kind = "human", id = "owner" }]
+
+[epic]
+active = "EPIC-009-skill-classification-schema"
+stage = "3"
+updated = "2026-09-03"
