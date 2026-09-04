@@ -26,7 +26,7 @@ failure_handling:
   - on_environment_mismatch: "verification.md marked environment=local, not ci"
 
 composition:
-  - may_invoke: []                        # phase 0: no runtime
+  - may_invoke: [log]                     # oracle runs land in .runs/ (CLI; see core-capabilities/log)
 # Language (REQ-I18N-001): this skill's human-readable artifact prose
 # follows the active language; identifiers, field names, paths, and
 # verification commands/oracles stay canonical English.

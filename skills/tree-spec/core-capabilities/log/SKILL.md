@@ -151,6 +151,22 @@ exit-code, and metadata without re-running anything.
 
 ---
 
+## Reflection (reading your own work back)
+
+After implementing or verifying, read the epic's run history:
+
+```bash
+python -m treespec_log runs list <epic>
+```
+
+One line per record — `run-id`, skill, exit code, mode, first claim line —
+for both sequential and hash ids. It shows what was actually executed and
+which commands failed without opening each record. For the full picture
+(input/output/claim/verify/stdout) read the record dir `.runs/<epic>/<run-id>/`
+that `run` printed.
+
+---
+
 ## Anti-patterns
 
 - ❌ Using `--mode` / `--chosen` with the `wrap` capability — modes are a

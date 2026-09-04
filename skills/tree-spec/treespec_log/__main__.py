@@ -80,8 +80,29 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 def _cmd_runs(args: argparse.Namespace) -> int:
     if args.runs_action == "list":
-        for path in runs.list_records(args.runs_dir):
-            print(path)
+        if not args.epic:
+            for path in runs.list_records(args.runs_dir):
+                print(path)
+            return 0
+        # Per-epic digest for agent reflection (owner-directed, EPIC-013):
+        # one line per record — sequential and hash ids alike.
+        for run_id, meta, code in runs.list_epic_records(args.runs_dir, args.epic):
+            claim_path = os.path.join(
+                runs.record_dir(args.runs_dir, args.epic, run_id), "claim.md"
+            )
+            first = ""
+            try:
+                with open(claim_path, encoding="utf-8") as fh:
+                    first = next((ln.strip() for ln in fh if ln.strip()), "")
+            except OSError:
+                pass
+            print(
+                f"{run_id}\t"
+                f"skill={meta.get('skill', 'unknown')}\t"
+                f"exit={code}\t"
+                f"mode={meta.get('mode', 'single')}\t"
+                f"claim={first}"
+            )
         return 0
     if args.runs_action == "validate":
         incomplete = runs.validate_runs(args.runs_dir)
@@ -197,7 +218,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     runs_cmd = sub.add_parser("runs", help="inspect the .runs/ store")
     runs_cmd.add_argument("runs_action", choices=["list", "validate", "report"])
-    runs_cmd.add_argument("epic", nargs="?", default=None, help="epic id (report only)")
+    runs_cmd.add_argument(
+        "epic",
+        nargs="?",
+        default=None,
+        help="epic id (list digest / report)",
+    )
     runs_cmd.add_argument("--path", default=".runs", help="runs store to act on")
     runs_cmd.add_argument(
         "--tolerance",

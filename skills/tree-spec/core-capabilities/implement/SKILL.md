@@ -29,7 +29,7 @@ failure_handling:
   - on_scope_creep: "conflict doc, do not widen scope.in without G_plan"
 
 composition:
-  - may_invoke: []                        # phase 0: no runtime composition
+  - may_invoke: [log]                     # audit records of executed commands (CLI; see core-capabilities/log)
 # Language (REQ-I18N-001): this skill's human-readable artifact prose
 # follows the active language; identifiers, field names, paths, and
 # verification commands/oracles stay canonical English.
@@ -92,7 +92,10 @@ Commands you run (tests, builds, linters) leave an audit record via the
 `log` capability — `bash <skill-root>/scripts/treespec-wrap.sh --epic <id>
 --claim ... --verify ... -- <cmd>` — so the report's `test_refs` / `ci_run`
 can point at a concrete `.runs/<epic>/<run-id>/` record instead of a bare
-claim. Procedure: `core-capabilities/log/SKILL.md`.
+claim. Procedure: `core-capabilities/log/SKILL.md`. Before writing the
+report, read the history back — `python -m treespec_log runs list <epic>`
+prints one line per record (id, skill, exit code, claim) so failures surface
+as reflection material instead of being hidden.
 
 ### Step 4. Claim/Verify report
 

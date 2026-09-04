@@ -37,9 +37,9 @@ trap cleanup EXIT
 # bash to its real path once, here, so the AC expressions below can
 # use it. sh.exe works on both POSIX and Windows-with-Git.
 if command -v bash >/dev/null 2>&1; then
-    BASH_BIN="$(command -v bash)"
+ BASH_BIN="$(command -v bash)"
 else
-    BASH_BIN="/usr/bin/bash"
+ BASH_BIN="/usr/bin/bash"
 fi
 export BASH_BIN
 export WRAPPER="$SKILL_ROOT/scripts/treespec-wrap.sh"
@@ -203,5 +203,32 @@ runs = sorted(os.listdir(rec_root))
 assert len(runs) >= 2, f'expected >=2 records under {rec_root}, got {runs}'
 print('OK')
 " "AC-7: treespec-wrap.sh is append-only (STANDARD)"
+
+# Reflection digest (owner-directed, EPIC-013): `runs list <epic>` shows
+# every record of the epic — sequential AND hash ids alike — with skill,
+# exit code, mode and the first claim line. Failing runs must be visible.
+assert_python "
+import os, subprocess, sys
+env = os.environ
+def cli(*a):
+    return subprocess.run([sys.executable, '-m', 'treespec_log', *a],
+                          cwd=env['SCRATCH'], env=env, capture_output=True, text=True)
+p = cli('run', 'refl-skill', '--epic', 'EPIC-REFL', '--claim', 'first claim line', '--exit-code', '0')
+assert p.returncode == 0, f'digest: run failed: {p.stderr!r}'
+p = cli('run', 'refl-skill', '--epic', 'EPIC-REFL', '--claim', 'second claim line', '--exit-code', '1')
+assert p.returncode == 0, f'digest: failing run must still be recorded: {p.stderr!r}'
+p = cli('run', 'refl-skill', '--epic', 'EPIC-REFL', '--id-strategy', 'hash',
+        '--input', '{\"x\": 1}', '--claim', 'hash claim line')
+assert p.returncode == 0, f'digest: hash run failed: {p.stderr!r}'
+p = cli('runs', 'list', 'EPIC-REFL')
+assert p.returncode == 0, f'runs list <epic> failed: {p.stderr!r}'
+lines = [l for l in p.stdout.splitlines() if l.strip()]
+assert len(lines) == 3, f'digest: expected 3 records, got {len(lines)}: {p.stdout!r}'
+assert any('exit=0' in l and 'first claim line' in l for l in lines), f'digest: first record missing/wrong: {lines}'
+assert any('exit=1' in l and 'second claim line' in l for l in lines), f'digest: failing run must be visible: {lines}'
+assert any('hash claim line' in l for l in lines), f'digest: hash-id record must be visible: {lines}'
+assert all('skill=refl-skill' in l and 'mode=single' in l for l in lines), f'digest: skill/mode fields missing: {lines}'
+print('OK')
+" "reflection digest: runs list <epic> shows sequential + hash records (STANDARD)"
 
 report_and_exit

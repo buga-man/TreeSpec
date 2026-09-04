@@ -247,11 +247,13 @@ def quarantine_path(runs_dir: str, skill_id: str) -> str:
     return os.path.join(runs_dir, QUARANTINE_SUBDIR, f"{skill_id}.json")
 
 
-def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
-    """Non-chosen attempt records of one epic: (run_id, metadata, exit_code).
+def list_epic_records(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
+    """All records of one epic regardless of id format: (run_id, metadata, exit_code).
 
-    ``chosen`` records link attempts and are not attempts themselves, so they
-    never count toward total_runs (feasibility risk #1)."""
+    Unlike ``_epic_attempts`` this does NOT filter by the sequential id
+    shape — hash-strategy ids (``<base>``, ``<base>-2``, ...) are visible too,
+    so an agent can read back its own work for reflection.
+    ``chosen`` records are included (they are part of the history)."""
     base = epic_dir(runs_dir, epic_id)
     if not os.path.isdir(base):
         return []
@@ -261,8 +263,6 @@ def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
         return []
     out: list[tuple[str, dict, int]] = []
     for name in names:
-        if not _ID_RE.match(name):
-            continue
         meta_path = os.path.join(base, name, "metadata.json")
         if not os.path.isfile(meta_path):
             continue
@@ -270,8 +270,6 @@ def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
             with open(meta_path, encoding="utf-8") as fh:
                 meta = json.load(fh)
         except (ValueError, OSError):
-            continue
-        if meta.get("chosen"):
             continue
         exit_path = os.path.join(base, name, "exit-code.txt")
         try:
@@ -281,6 +279,20 @@ def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
             code = 0
         out.append((name, meta, code))
     return out
+
+
+def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
+    """Non-chosen attempt records of one epic: (run_id, metadata, exit_code).
+
+    ``chosen`` records link attempts and are not attempts themselves, so they
+    never count toward total_runs (feasibility risk #1). Only sequential-shape
+    ids count as attempts — flaky semantics (REQ-EXEC-004) apply to the
+    default strategy; hash records stay visible via ``list_epic_records``."""
+    return [
+        t
+        for t in list_epic_records(runs_dir, epic_id)
+        if _ID_RE.match(t[0]) and not t[1].get("chosen")
+    ]
 
 
 def report_epic(runs_dir: str, epic_id: str) -> list[SkillRate]:
