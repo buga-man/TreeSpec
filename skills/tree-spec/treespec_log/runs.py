@@ -64,6 +64,103 @@ def _existing_run_ids(runs_dir: str, epic_id: str) -> list[int]:
     return nums
 
 
+# Execution-mode groups (REQ-EXEC-003 / EPIC-011). A best-of-n /
+# consensus *attempt* shares an (epic, mode) group with its siblings; the
+# --chosen record is not an attempt and is exempt from seed-distinctness.
+_MODE_GROUP = ("best-of-n", "consensus")
+
+
+def _iter_attempts(runs_dir: str, epic_id: str, mode: str) -> list[str]:
+    """Return run-ids of attempts in the same (epic, mode) group."""
+    base = epic_dir(runs_dir, epic_id)
+    if not os.path.isdir(base):
+        return []
+    ids: list[str] = []
+    try:
+        names = os.listdir(base)
+    except OSError:
+        return ids
+    for name in names:
+        if not _ID_RE.match(name):
+            continue
+        meta_path = os.path.join(base, name, "metadata.json")
+        if not os.path.isfile(meta_path):
+            continue
+        try:
+            with open(meta_path, encoding="utf-8") as fh:
+                meta = json.load(fh)
+        except (ValueError, OSError):
+            continue
+        if meta.get("mode") == mode and not meta.get("chosen"):
+            ids.append(name)
+    return ids
+
+
+def _seed_of(runs_dir: str, epic_id: str, run_id: str):
+    """Seed recorded for a run (metadata.run_seed / seed.txt), or None."""
+    meta_path = os.path.join(epic_dir(runs_dir, epic_id), run_id, "metadata.json")
+    if os.path.isfile(meta_path):
+        try:
+            with open(meta_path, encoding="utf-8") as fh:
+                meta = json.load(fh)
+            if meta.get("run_seed") is not None:
+                return meta.get("run_seed")
+        except (ValueError, OSError):
+            pass
+    seed_path = os.path.join(epic_dir(runs_dir, epic_id), run_id, "seed.txt")
+    if os.path.isfile(seed_path):
+        try:
+            with open(seed_path, encoding="utf-8") as fh:
+                return fh.read().strip()
+        except OSError:
+            return None
+    return None
+
+
+def _check_mode_seed(runs_dir, epic_id, mode, seed, chosen) -> None:
+    """seed-distinctness (AC-4): a best-of-n / consensus attempt must carry
+    a seed that is distinct within its (epic, mode) group."""
+    if chosen or mode not in _MODE_GROUP:
+        return
+    if seed is None:
+        raise ValueError(f"{mode} attempt requires --seed")
+    for other in _iter_attempts(runs_dir, epic_id, mode):
+        if _seed_of(runs_dir, epic_id, other) == seed:
+            raise ValueError(
+                f"seed {seed!r} already used by attempt {other} in "
+                f"{epic_id}/{mode}; best-of-n/consensus attempts need distinct seeds"
+            )
+
+
+def _check_attempts(runs_dir, epic_id, mode, attempts, chosen) -> None:
+    """chosen/consensus record linking (AC-2, AC-3): --attempts run-ids must
+    exist and share the record's epic + mode."""
+    if not chosen:
+        return
+    if not attempts:
+        raise ValueError("chosen record requires --attempts <ids>")
+    seen = set()
+    for run_id in attempts:
+        meta_path = os.path.join(epic_dir(runs_dir, epic_id), run_id, "metadata.json")
+        if not os.path.isfile(meta_path):
+            raise ValueError(f"--attempts run-id {run_id!r} does not exist")
+        try:
+            with open(meta_path, encoding="utf-8") as fh:
+                meta = json.load(fh)
+        except (ValueError, OSError) as err:
+            raise ValueError(f"--attempts run-id {run_id!r} is not readable") from err
+        if meta.get("mode") != mode:
+            raise ValueError(
+                f"--attempts run-id {run_id!r} is mode {meta.get('mode')!r}, "
+                f"not {mode!r}"
+            )
+        if meta.get("chosen"):
+            raise ValueError(f"--attempts run-id {run_id!r} is itself a chosen record")
+        seen.add(run_id)
+    if len(seen) != len(attempts):
+        raise ValueError("--attempts contains duplicate run-ids")
+
+
 def allocate_run_id(
     runs_dir: str,
     epic_id: str,
@@ -121,17 +218,33 @@ def write_record(
     seed=None,
     metadata: dict | None = None,
     id_strategy: str = "sequential",
+    mode: str = "single",
+    chosen: bool = False,
+    attempts: list | None = None,
+    selection=None,
 ) -> RunResult:
     """Write a complete record atomically (temp dir + rename).
 
     Atomic write means ``validate`` never observes a half-written record,
     so an incomplete artifact can never slip into the audit trail.
 
-    The body sits behind one boundary handler: file errors surface to
-    treespec.main, which reports them. The inner try performs the atomic
-    temp-dir write + rename and rolls back on any failure.
+    Execution mode (REQ-EXEC-003 / EPIC-011):
+      * ``mode`` ∈ {single, best-of-n, consensus} is recorded in
+        ``metadata.mode`` (defaults to ``single`` for backwards compatibility).
+      * A best-of-n / consensus **attempt** (``chosen=False``) needs a
+        ``seed`` and it must be distinct within the epic + mode group
+        (seed-distinctness, AC-4). The ``--chosen`` record is exempt.
+      * A ``chosen`` record links to its attempts (``metadata.attempts``)
+        and records the selection outcome (``metadata.selection``).
+
+    The body sits behind one boundary handler: validation and file errors
+    surface to treespec.main, which reports them. The inner try performs the
+    atomic temp-dir write + rename and rolls back on any failure.
     """
     try:
+        _check_mode_seed(runs_dir, epic_id, mode, seed, chosen)
+        _check_attempts(runs_dir, epic_id, mode, attempts, chosen)
+
         base = epic_dir(runs_dir, epic_id)
         os.makedirs(base, exist_ok=True)
 
@@ -155,6 +268,10 @@ def write_record(
                 stochastic,
                 seed,
                 metadata,
+                mode,
+                chosen,
+                attempts,
+                selection,
             )
             os.replace(tmp_dir, final_path)
         except BaseException:
@@ -163,7 +280,7 @@ def write_record(
             raise
 
         return RunResult(run_id=run_id, path=final_path, stochastic=stochastic)
-    except (OSError, FileExistsError):
+    except (OSError, FileExistsError, ValueError):
         # Boundary: let treespec.main report the failure.
         raise
 
@@ -178,6 +295,10 @@ def _write_files(
     stochastic,
     seed,
     metadata,
+    mode,
+    chosen,
+    attempts,
+    selection,
 ) -> None:
     # Single boundary handler around the record's file writes; errors
     # propagate to treespec.main. The atomic temp-dir + rename (see
@@ -189,30 +310,43 @@ def _write_files(
         _write_text(os.path.join(path, "claim.md"), claim)
         _write_text(os.path.join(path, "verify.md"), verify)
         _write_text(os.path.join(path, "exit-code.txt"), str(int(exit_code)))
-        if stochastic and seed is not None:
+        # Seed is auditable whenever one is supplied (best-of-n / consensus
+        # attempts carry distinct seeds), not only for stochastic skills.
+        if seed is not None:
             _write_text(os.path.join(path, "seed.txt"), str(seed))
-        _write_json(
-            os.path.join(path, "metadata.json"),
-            _build_metadata(stochastic, seed, metadata),
-        )
+        _write_json(os.path.join(path, "metadata.json"), _build_metadata(
+            stochastic, seed, metadata, mode, chosen, attempts, selection,
+        ))
     except OSError:
         raise
 
 
-def _build_metadata(stochastic, seed, metadata) -> dict:
-    """metadata.json for AC-3: reproducibility level, mode, retries."""
+def _build_metadata(stochastic, seed, metadata, mode, chosen, attempts, selection) -> dict:
+    """metadata.json: reproducibility level, mode, retries, plus the
+    best-of-n / consensus linking fields when this is a chosen record."""
     meta = {
         # AC-3: reproducibility level is the first key so the oracle's
         # "output_contains reproducibility" check is unambiguous.
         "reproducibility": "best-effort" if not stochastic else "strict",
-        "mode": "single",
+        "mode": mode,
         "retries": 0,
         "stochastic": bool(stochastic),
         "run_seed": seed,
     }
     if metadata:
         meta.update(metadata)
+    if chosen:
+        meta["chosen"] = True
+        meta["attempts"] = list(attempts or [])
+        meta["selection"] = selection if selection is not None else _default_selection(mode)
     return meta
+
+
+def _default_selection(mode) -> dict:
+    """Per-mode default selection record (REQ-EXEC-003 / AC-2, AC-3)."""
+    if mode == "consensus":
+        return {"criteria": "majority", "answer": None, "tally": {}, "tie_break": "lowest-seed"}
+    return {"criteria": "oracle pass rate", "chosen_run": None}
 
 
 def _normalize(value) -> dict | list:

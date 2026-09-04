@@ -1,4 +1,5 @@
 artifacts/
 .agents/
 specs/
-.runs/
+.runs/__pycache__/
+*.pyc

@@ -148,6 +148,9 @@ so new rules never silently cut off pre-v0.2 consumers.
 
 Source: `skills/tree-spec/documents/spec-format.md §6` (L0 fields).
 Coverage map walks every `tests/_fixtures/biz-spec/REQ-*.md`.
+S-017 is a per-REQ verdict on the **live** `artifacts/global/biz-spec/REQ-EXEC-003.md`
+(not a fixture walk): it fails spec validation unless that REQ declares a
+non-empty `selection_criteria` (EPIC-011 verdict at epic init).
 
 | # | Assertion | Rule | Source of truth | test location | Sev |
 | --- | ----------- | ------ | ----------------- | --------------- | ----- |
@@ -167,6 +170,7 @@ Coverage map walks every `tests/_fixtures/biz-spec/REQ-*.md`.
 | S-014 | `provenance.author` | non-empty | `spec-format.md §6` | `tests/spec/test-rules.sh` `ASSERT-SPEC-014` | FAIL |
 | S-015 | `source_refs` resolves | if present, every `.path` resolves relative to spec dir | `spec-format.md §6` (REQ-TRACE-001 AC-3) | `tests/spec/test-rules.sh` `ASSERT-SPEC-015` | FAIL |
 | S-016 | stdlib guard | no `pip install` / `requirements.txt` in `tests/spec/` | REQ-VALID-001 AC-7 | `tests/spec/test-rules.sh` `ASSERT-SPEC-016` | FAIL |
+| S-017 | `selection_criteria` present | REQ-EXEC-003 declares a non-empty spec-level `selection_criteria` (EPIC-011 verdict at epic init) | `spec-format.md §6` / REQ-EXEC-003 | `tests/spec/test-rules.sh` `ASSERT-SPEC-017` | FAIL |
 
 ### Router fail-closed mirror — `tests/router/test-rules.sh`
 

@@ -8,7 +8,8 @@
 # Each assert has a stable id (ASSERT-SPEC-NNN) so the rule catalog
 # at documents/validation.md (EPIC-007) can reference it by id.
 #
-# Coverage map (16 asserts, walks all tests/_fixtures/biz-spec/REQ-*.md):
+# Coverage map (17 asserts; 001-016 walk tests/_fixtures/biz-spec/REQ-*.md;
+# 017 is a per-REQ verdict on the live REQ-EXEC-003.md, not a fixture walk):
 #   001  id matches ^REQ-[A-Z]{2,8}-\d{3}$
 #   002  id unique across the directory
 #   003  title non-empty
@@ -27,6 +28,7 @@
 #        (resolved relative to the spec file's directory, per
 #        REQ-TRACE-001 AC-3 design)
 #   016  AC-7 stdlib guard — no 'pip install' / 'requirements.txt'
+#   017  REQ-EXEC-003 has a non-empty selection_criteria (EPIC-011 verdict)
 # ════════════════════════════════════════════════════════════════
 
 . "$(dirname "$0")/../_lib/common.sh"
@@ -276,9 +278,31 @@ print(f'OK ({checked} source_refs checked)')
 
 if grep -rE 'pip install|requirements\.txt' tests/spec --exclude='test-rules.sh' 2>/dev/null; then
     _log_fail "ASSERT-SPEC-016: tests/spec/ contains no 'pip install' or 'requirements.txt' (REQ-VALID-001 AC-7)" \
-              "remove external dependency, REQ-VALID-001 AC-7 is stdlib-only"
+        "remove external dependency, REQ-VALID-001 AC-7 is stdlib-only"
 else
     _log_pass "ASSERT-SPEC-016: tests/spec/ contains no 'pip install' or 'requirements.txt' (REQ-VALID-001 AC-7)"
 fi
+
+# ── ASSERT-SPEC-017 — REQ-EXEC-003 declares a spec-level selection_criteria (verdict at epic init) ──
+# EPIC-011's best-of-n / consensus modes are only usable if a verifiable
+# selection criterion exists. This is a mechanical verdict, not a human
+# judgement: the live REQ-EXEC-003.md must declare a non-empty
+# selection_criteria, else spec validation fails and the epic cannot reach
+# G_spec. Asserted on the live spec (not a fixture) because it is a
+# per-REQ verdict, not a pattern check over all specs.
+
+assert_python "
+import yaml, pathlib
+root = pathlib.Path('__PROJECT_ROOT__')
+f = root / 'artifacts/global/biz-spec/REQ-EXEC-003.md'
+assert f.exists(), f'REQ-EXEC-003.md not found at {f} — cannot give verdict'
+fm = yaml.safe_load(f.read_text(encoding='utf-8').split('---', 2)[1])
+crit = fm.get('selection_criteria', '')
+assert isinstance(crit, str) and crit.strip(), (
+    f'{f.name}: selection_criteria must be a non-empty string '
+    f'(EPIC-011 verdict at epic init — best-of-n/consensus need a verifiable criterion)'
+)
+print('OK')
+" 'ASSERT-SPEC-017: REQ-EXEC-003 declares a spec-level selection_criteria (verdict at epic init)'
 
 report_and_exit

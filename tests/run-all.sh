@@ -153,6 +153,28 @@ else
     FAILED+=("$runs_script")
 fi
 
+# ── EPIC-011 execution-mode tests (REQ-EXEC-003 / single, best-of-n, consensus) ─
+# The record-layer execution modes are exercised end-to-end by
+# tests/runs/test-exec-modes.sh (AC-1..AC-4). Additive: its exit code
+# aggregates with the rest, like the runs and backward-compat groups above.
+
+printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "exec-modes (EPIC-011)\n"
+em_script="tests/runs/test-exec-modes.sh"
+if [ ! -f "$em_script" ]; then
+    printf "  ✗ %s — not found\n" "$em_script"
+    FAIL=$((FAIL + 1))
+    FAILED+=("$em_script")
+elif bash "$em_script" >/tmp/test-em-$(basename "$em_script" .sh).log 2>&1; then
+    printf "  ✓ %s\n" "$em_script"
+    PASS=$((PASS + 1))
+else
+    printf "  ✗ %s\n" "$em_script"
+    cat /tmp/test-em-$(basename "$em_script" .sh).log
+    FAIL=$((FAIL + 1))
+    FAILED+=("$em_script")
+fi
+
 printf "\n════════════════════════════════════════════════════════════════\n"
 printf "Result: %d passed, %d failed\n" "$PASS" "$FAIL"
 

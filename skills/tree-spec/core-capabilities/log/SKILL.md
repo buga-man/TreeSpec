@@ -59,6 +59,15 @@ skill tells the agent **when** and **how** to call it.
 
 Two entry points — both land in `.runs/`:
 
+> **Execution modes (`single` / `best-of-n` / `consensus`) are a `run`-only
+> surface (REQ-EXEC-003 / EPIC-011).** Use `--mode` on `python -m treespec_log
+> run` to record the mode of an attempt; `--chosen --attempts <ids>` records
+> the chosen/consensus record that links to its attempts. `wrap` never sets a
+> mode — it stays `single`. The actual skill execution / seed assignment /
+> output selection is done by the calling runtime and is logged through `run`.
+
+Two entry points — both land in `.runs/`:
+
 | Mode | When to use | Entry |
 |------|-------------|-------|
 | `run` | The agent has already produced the skill's output and just needs to write a record of it. | `python -m treespec_log run <skill> --epic <id> --claim ... --verify ... --input ... --output ...` |
@@ -137,6 +146,8 @@ exit-code, and metadata without re-running anything.
 
 ## Anti-patterns
 
+- ❌ Using `--mode` / `--chosen` with the `wrap` capability — modes are a
+  `run`-only surface; `wrap` always records `mode = single`.
 - ❌ Calling `python -m treespec_log run` from outside the skill folder
   without setting `PYTHONPATH` — the module won't resolve.
 - ❌ Calling the `wrap` capability with a literal `--` in the wrapped

@@ -19,6 +19,7 @@ real I/O error inside the store).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -29,6 +30,18 @@ def _cmd_run(args: argparse.Namespace) -> int:
     run_id = runs.allocate_run_id(
         args.runs_dir, args.epic, strategy=args.id_strategy, input_data=args.input
     )
+    # Parse --attempts only when --chosen is set (REQ-EXEC-003 / AC-2, AC-3).
+    attempts = None
+    if args.chosen:
+        attempts = list(args.attempts or [])
+    # Parse --selection JSON only when --chosen is set; modes build a
+    # per-mode default when it is omitted.
+    selection = None
+    if args.chosen and args.selection:
+        try:
+            selection = json.loads(args.selection)
+        except ValueError as err:
+            raise ValueError(f"--selection is not valid JSON: {args.selection!r}") from err
     result = runs.write_record(
         args.runs_dir,
         args.epic,
@@ -40,8 +53,12 @@ def _cmd_run(args: argparse.Namespace) -> int:
         exit_code=args.exit_code,
         stochastic=args.stochastic,
         seed=args.seed,
-        metadata={"reproducibility": args.reproducibility, "mode": "single"},
+        metadata={"reproducibility": args.reproducibility},
         id_strategy=args.id_strategy,
+        mode=args.mode,
+        chosen=args.chosen,
+        attempts=attempts,
+        selection=selection,
     )
     # AC-1: print the record path so the oracle sees ".runs/".
     # Normalise to forward slashes so the path is identifiable even on
@@ -89,10 +106,32 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--verify", default="")
     run.add_argument("--exit-code", type=int, default=0)
     run.add_argument("--stochastic", action="store_true")
-    run.add_argument("--seed", default=None, help="seed (stochastic skills only)")
+    run.add_argument("--seed", default=None, help="seed (best-of-n/consensus attempts)"
+    )
     run.add_argument("--reproducibility", default="strict")
     run.add_argument(
         "--id-strategy", default="sequential", choices=["sequential", "hash"]
+    )
+    # Execution modes (REQ-EXEC-003 / EPIC-011). --mode defaults to single,
+    # so existing invocations are unchanged. --chosen/--attempts/--selection
+    # build the chosen/consensus record that links a group of attempts.
+    run.add_argument(
+        "--mode",
+        default="single",
+        choices=["single", "best-of-n", "consensus"],
+        help="execution mode recorded in metadata.mode (default: single)",
+    )
+    run.add_argument(
+        "--chosen", action="store_true",
+        help="write the chosen/consensus record that links to --attempts",
+    )
+    run.add_argument(
+        "--attempts", nargs="+", default=None,
+        help="attempt run-ids grouped by a --chosen record (AC-2, AC-3)",
+    )
+    run.add_argument(
+        "--selection", default=None,
+        help="selection outcome JSON for the --chosen record (defaults per mode)",
     )
     run.set_defaults(func=_cmd_run)
 
