@@ -22,7 +22,7 @@ set -u
 
 cd "$(dirname "$0")/.." || exit 2
 
-SKILLS=(intake session-resume brainstorm write-spec plan implement verify)
+SKILLS=(intake session-resume brainstorm write-spec plan implement verify log)
 VALIDATION_GROUPS=(manifest spec router)
 
 PASS=0
@@ -31,15 +31,25 @@ FAILED=()
 
 printf "Running per-skill tests in %s\n\n" "$(pwd)"
 
-# ── SKILLS loop ────────────────────────────────────────────────
-# Behaviour preserved bit-identical with the pre-T-07 runner. Looks
-# for test-structure.sh + test-contract.sh and requires scenarios.md
-# for each skill. Per-failure diagnostic unchanged.
+# ── SKILLS loop ──────────────────────────────────────
+# Behaviour preserved bit-identical with the pre-T-07 runner. Auto-discovers
+# every test-*.sh under tests/$skill/, so skill-specific extras (e.g. log's
+# test-self-contained.sh) get picked up without hard-coding. Requires
+# scenarios.md for each skill. Per-failure diagnostic unchanged.
 
 for skill in "${SKILLS[@]}"; do
     printf "━━━ %s ━━━\n" "$skill"
 
-    for script in "tests/$skill/test-structure.sh" "tests/$skill/test-contract.sh"; do
+    # Auto-discover test scripts in canonical order (structure first,
+    # then contract, then anything else).
+    scripts=$(ls "tests/$skill"/test-*.sh 2>/dev/null | sort)
+    if [ -z "$scripts" ]; then
+        printf "  ✗ tests/%s/ — no test-*.sh scripts\n" "$skill"
+        FAIL=$((FAIL + 1))
+        continue
+    fi
+
+    for script in $scripts; do
         if [ ! -f "$script" ]; then
             printf "  ✗ %s — file not found\n" "$script"
             FAIL=$((FAIL + 1))
@@ -49,7 +59,7 @@ for skill in "${SKILLS[@]}"; do
 
         # Each test exits with number of failed assertions. We don't
         # propagate; we run all scripts and tally.
-        if bash "$script" > /tmp/test-$skill-$(basename "$script" .sh).log 2>&1; then
+        if bash "$script" >/tmp/test-$skill-$(basename "$script" .sh).log 2>&1; then
             printf "  ✓ %s\n" "$script"
             PASS=$((PASS + 1))
         else
@@ -64,7 +74,7 @@ for skill in "${SKILLS[@]}"; do
     if [ -f "tests/$skill/scenarios.md" ]; then
         printf "  · %s (documentation)\n" "tests/$skill/scenarios.md"
     else
-        printf "  ✗ %s — scenarios.md not found\n" "tests/$skill/"
+        printf "  ✗ %s — scenarios.md not found\n" "$tests/$skill/"
         FAIL=$((FAIL + 1))
     fi
 done
@@ -86,7 +96,7 @@ for group in "${VALIDATION_GROUPS[@]}"; do
         continue
     fi
 
-    if bash "$script" > /tmp/test-$group-$(basename "$script" .sh).log 2>&1; then
+    if bash "$script" >/tmp/test-$group-$(basename "$script" .sh).log 2>&1; then
         printf "  ✓ %s\n" "$script"
         PASS=$((PASS + 1))
     else
@@ -111,7 +121,7 @@ if [ ! -f "$bwc_script" ]; then
     printf "  ✗ %s — file not found\n" "$bwc_script"
     FAIL=$((FAIL + 1))
     FAILED+=("$bwc_script")
-elif bash "$bwc_script" > /tmp/test-bwc-$(basename "$bwc_script" .sh).log 2>&1; then
+elif bash "$bwc_script" >/tmp/test-bwc-$(basename "$bwc_script" .sh).log 2>&1; then
     printf "  ✓ %s\n" "$bwc_script"
     PASS=$((PASS + 1))
 else
@@ -119,6 +129,28 @@ else
     cat /tmp/test-bwc-$(basename "$bwc_script" .sh).log
     FAIL=$((FAIL + 1))
     FAILED+=("$bwc_script")
+fi
+
+# ── EPIC-010 execution-log tests (REQ-EXEC-002 / .runs/) ─────────
+# The append-only execution-log writer is exercised end-to-end by
+# tests/runs/test-runs.sh (AC-1..AC-4). Additive: its exit code
+# aggregates with the rest, like the backward-compat group above.
+
+printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "runs (EPIC-010)\n"
+runs_script="tests/runs/test-runs.sh"
+if [ ! -f "$runs_script" ]; then
+    printf "  ✗ %s — file not found\n" "$runs_script"
+    FAIL=$((FAIL + 1))
+    FAILED+=("$runs_script")
+elif bash "$runs_script" >/tmp/test-runs-$(basename "$runs_script" .sh).log 2>&1; then
+    printf "  ✓ %s\n" "$runs_script"
+    PASS=$((PASS + 1))
+else
+    printf "  ✗ %s\n" "$runs_script"
+    cat /tmp/test-runs-$(basename "$runs_script" .sh).log
+    FAIL=$((FAIL + 1))
+    FAILED+=("$runs_script")
 fi
 
 printf "\n════════════════════════════════════════════════════════════════\n"

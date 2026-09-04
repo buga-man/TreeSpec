@@ -77,6 +77,13 @@ competition and gives the kit a single front door.
    recommendation. The router only starts the work — the dispatched
    capability reads the shared documents. See **Shared documents** below.
 
+   Capabilities that perform work and want an audit record invoke the
+   `log` capability — either `python -m treespec_log run <skill> ...`
+   for hand-built records, or `bash scripts/treespec-wrap.sh ...` to
+   wrap an arbitrary command. Both are part of the kit and need no
+   consumer-side setup (PYTHONPATH is resolved inside the skill).
+   See `core-capabilities/log/SKILL.md` for the procedure.
+
 5. **Fresh project, no active epic** → the router recommends creating one
    (`brainstorm` → `write-spec`).
 
@@ -124,6 +131,7 @@ skills/tree-spec/scripts/tree-spec-check.sh --router
 | `plan` | decompose approved spec into tasks |
 | `implement` | implement one task per session |
 | `verify` | run AC oracles, capture evidence |
+| `log` | write a `.runs/<epic>/<run-id>/` record (run or wrap) |
 
 ## Shared documents
 

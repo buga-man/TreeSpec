@@ -16,7 +16,7 @@ scope:
     - "Intake buffer artifacts/intake/REQUIREMENTS.md with candidate schema (Cand-ID, text, source ref path+anchor, domain, status, confidence)"
     - "New skill skills/intake/SKILL.md: normalize raw sources into buffer candidates; append-only, never removes rows"
     - "Manifest: [pipeline.skills.intake] declared; stage 1 flow = intake → brainstorm → write-spec; skill count 6→7"
-    - "REQ-TREESPEC-001 revised: skill-count assertions (AC-2, constraints) updated from 6 to 7"
+    - "REQ-TREESPEC-001 revised: skill-count assertions (AC-2, constraints) updated from 6 to 7 (rev 2) and later to 8 (rev 5, EPIC-010 T-04, 2026-09-04)"
     - "Dedup and within-raw-set conflict flagging at intake time (documented heuristics)"
     - "Intake format conventions for typical sources (BR/US lists, Jira export, Confluence prose, chat transcripts) in documents/assets/"
     - "Kit self-consistency: kit spec + tests/intake/ following the existing per-skill pattern"
@@ -114,12 +114,13 @@ acceptance_criteria:
   - id: AC-7
     pattern: ubiquitous
     statement: |
-      The system shall declare 7 skills in tree-spec.toml and
-      REQ-TREESPEC-001's skill-count assertions (AC-2, constraints) shall be
-      revised from 6 to 7.
+      The system shall declare 10 skills in tree-spec.toml and
+      REQ-TREESPEC-001's skill-count assertions (AC-2, constraints) shall
+      reflect the cumulative history (6 → 7 in rev 2, → 8 in rev 5).
+      The `log` capability was added in EPIC-010 T-04 (2026-09-04).
     verification:
       method: static_analysis
-      command: "python -c \"import tomllib; d=tomllib.load(open('tree-spec.toml','rb')); assert len(d['pipeline']['skills'])==7\" && grep -q 'exactly 7' artifacts/global/biz-spec/REQ-TREESPEC-001.md && echo OK"
+      command: "python -c \"import tomllib; d=tomllib.load(open('tree-spec.toml','rb')); assert len(d['pipeline']['skills'])==10\" && grep -q 'exactly 8' artifacts/global/biz-spec/REQ-TREESPEC-001.md && echo OK"
       environment: local
       oracle:
         output_contains: "OK"

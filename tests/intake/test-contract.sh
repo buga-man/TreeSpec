@@ -35,24 +35,24 @@ assert_grep "$SKILL" 'human confirmation|one run = one draft' "AC-5: human-gated
 # AC-6: preparation-only — no spec-file writes into biz-spec.
 assert_grep "$SKILL" 'global/biz-spec/REQ-' "AC-6: body does not write specs directly" 1 1
 
-# AC-7: manifest declares 7 core capabilities (plus tree-spec + init wrappers).
+# AC-7: manifest declares 8 core capabilities (plus tree-spec + init wrappers).
 # EPIC-004 (one-skill style) moved skills under skills/tree-spec/core-capabilities/
-# and added init as a bootstrap entry. The 7 capability skills remain:
-# intake, brainstorm, write-spec, plan, implement, verify, session-resume.
-# REQ-TREESPEC-001 says "exactly 7" (post-conflict-002 wording; see
-# EPIC-005 docs/conflict-002.md and tests/_fixtures/biz-spec/REQ-TREESPEC-001.md).
+# and added init as a bootstrap entry. EPIC-010 T-04 (2026-09-04) added `log`
+# as the 8th core capability (cross-cutting; any stage may invoke it).
+# REQ-TREESPEC-001 says "exactly 8" since rev 5; see the revision history
+# and the marker note in EPIC-005 docs/conflict-002.md.
 assert_python "
 import tomllib
 d = tomllib.load(open('__PROJECT_ROOT__/tree-spec.toml', 'rb'))
 skills = d['pipeline']['skills']
-core = {'intake', 'session-resume', 'brainstorm', 'write-spec', 'plan', 'implement', 'verify'}
+core = {'intake', 'session-resume', 'brainstorm', 'write-spec', 'plan', 'implement', 'verify', 'log'}
 declared = set(skills.keys())
 missing = core - declared
 extra = declared - core - {'tree-spec', 'init'}
 assert not missing, ('core capabilities missing from [pipeline.skills]: ' + str(sorted(missing)))
 assert not extra, ('unexpected non-core skills in [pipeline.skills]: ' + str(sorted(extra)))
 print('OK')
-" "AC-7: manifest declares the 7 core capabilities (+ tree-spec, init)"
-assert_grep "tests/_fixtures/biz-spec/REQ-TREESPEC-001.md" 'exactly 7' "AC-7: REQ-TREESPEC-001 says exactly 7 (core capability skills, post-EPIC-004)"
+" "AC-7: manifest declares the 8 core capabilities (+ tree-spec, init)"
+assert_grep "tests/_fixtures/biz-spec/REQ-TREESPEC-001.md" 'exactly 8' "AC-7: REQ-TREESPEC-001 says exactly 8 (core capability skills, post-EPIC-010 T-04)"
 
 report_and_exit

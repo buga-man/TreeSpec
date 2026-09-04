@@ -14,8 +14,8 @@ epic: EPIC-001-install-kit
 
 scope:
   in:
-    - "tree-spec.toml at repo root, parsed by tomllib, declares [pipeline.skills] with 7 core capability skills (intake, session-resume, brainstorm, write-spec, plan, implement, verify) plus the registrar tree-spec and the bootstrap init"
-    - "skills/tree-spec/core-capabilities/<capability>/SKILL.md contains the 7 core capability procedures (intake, session-resume, brainstorm, write-spec, plan, implement, verify); skills/tree-spec/SKILL.md contains the registrar (router); skills/tree-spec/core-capabilities/init/SKILL.md contains the bootstrap"
+    - "tree-spec.toml at repo root, parsed by tomllib, declares [pipeline.skills] with 8 core capability skills (intake, session-resume, brainstorm, write-spec, plan, implement, verify, log) plus the registrar tree-spec and the bootstrap init"
+    - "skills/tree-spec/core-apabilities/<capability>/SKILL.md contains the 8 core capability procedures (intake, session-resume, brainstorm, write-spec, plan, implement, verify, log); skills/tree-spec/SKILL.md contains the registrar (router); skills/tree-spec/core-apabilities/init/SKILL.md contains the bootstrap"
     - "specs/ contains 7 specs (1 setup + 6 skill specs) following REQ-* format"
     - "artifacts/ initialized with README.md, INDEX.md, global/biz-spec/, epics/ per documents/references/artifacts-layout.md"
     - "EPIC-001-install-kit created with all 5 artifacts (STATUS, PATH, DECISIONS, tasks, docs/)"
@@ -45,15 +45,15 @@ acceptance_criteria:
   - id: AC-2
     pattern: ubiquitous
     statement: |
-      The repository shall contain exactly 7 core capability SKILL.md
-      files at skills/tree-spec/core-capabilities/<capability>/SKILL.md
+      The repository shall contain exactly 8 core capability SKILL.md
+      files at skills/tree-spec/core-apabilities/<capability>/SKILL.md
       (one per core capability: intake, session-resume, brainstorm,
-      write-spec, plan, implement, verify), plus the registrar at
+      write-spec, plan, implement, verify, log), plus the registrar at
       skills/tree-spec/SKILL.md and the bootstrap at
-      skills/tree-spec/core-capabilities/init/SKILL.md.
+      skills/tree-spec/core-apabilities/init/SKILL.md.
     verification:
       method: integration_test
-      command: "for s in intake session-resume brainstorm write-spec plan implement verify; do test -f \"skills/tree-spec/core-capabilities/$s/SKILL.md\" || exit 1; done; test -f skills/tree-spec/SKILL.md || exit 1; test -f skills/tree-spec/core-capabilities/init/SKILL.md || exit 1; echo OK"
+      command: "for s in intake session-resume brainstorm write-spec plan implement verify log; do test -f \"skills/tree-spec/core-apabilities/$s/SKILL.md\" || exit 1; done; test -f skills/tree-spec/SKILL.md || exit 1; test -f skills/tree-spec/core-apabilities/init/SKILL.md || exit 1; echo OK"
       environment: local
       oracle:
         output_contains: "OK"
@@ -64,10 +64,10 @@ acceptance_criteria:
     statement: |
       Each skill file shall be referenced by [pipeline.skills.<id>].file
       and the file shall exist (skill ids in: session-resume, intake,
-      brainstorm, write-spec, plan, implement, verify).
+      brainstorm, write-spec, plan, implement, verify, log).
     verification:
       method: integration_test
-      command: "for s in session-resume intake brainstorm write-spec plan implement verify; do test -f \"skills/tree-spec/core-capabilities/$s/SKILL.md\" || exit 1; done; echo OK"
+      command: "for s in session-resume intake brainstorm write-spec plan implement verify log; do test -f \"skills/tree-spec/core-apabilities/$s/SKILL.md\" || exit 1; done; echo OK"
       environment: local
       oracle:
         output_contains: "OK"
@@ -150,7 +150,7 @@ acceptance_criteria:
 
 provenance:
   created: 2026-08-28
-  updated: 2026-09-01
+  updated: 2026-09-04
   author: treespec-maintainers + agent
   revision_history:
     - revision: 1
@@ -168,10 +168,14 @@ provenance:
     - revision: 4
       date: 2026-09-01
       author: bugae + zed
-      note: post-EPIC-004 layout correction (one-skill style); AC-2 rewritten to enumerate 7 core capabilities at skills/tree-spec/core-capabilities/<capability>/SKILL.md + registrar + init; AC-3 verification command path fixed; AC-8 glob updated to walk skills/tree-spec/SKILL.md + skills/tree-spec/core-capabilities/*/SKILL.md; scope.in updated to match; constraints.invariants file count split into '7 capabilities + registrar + init' and '[pipeline.skills] count = 9'; closes EPIC-005 conflict-001 (REQ-TREESPEC-001 AC-2 spec drift).
+      note: post-EPIC-004 layout correction (one-skill style); AC-2 rewritten to enumerate 7 core capabilities at skills/tree-spec/core-apabilities/<capability>/SKILL.md + registrar + init; AC-3 verification command path fixed; AC-8 glob updated to walk skills/tree-spec/SKILL.md + skills/tree-spec/core-apabilities/*/SKILL.md; scope.in updated to match; constraints.invariants file count split into '7 capabilities + registrar + init' and '[pipeline.skills] count = 9'; closes EPIC-005 conflict-001 (REQ-TREESPEC-001 AC-2 spec drift).
+    - revision: 5
+      date: 2026-09-04
+      author: bugae + zed
+      note: EPIC-010 T-04 — `log` added as the 8th core capability (cross-cutting). AC-2 statement + verification command updated from 7 to 8; AC-3 statement + verification command updated to include log; scope.in list updated; constraints.invariants bumped to '8 + registrar + init = 10 SKILL.md' and '[pipeline.skills] count = 10'; valid from 2026-09-04 (REQ-TREESPEC-001 rev 5) onward.
 
-# ── L1 · CONDITIONAL ────────────────────────────────────────
-revision: 4
+# ── L1 · CONDITIONAL ───────────────────────────────
+revision: 5
 
 classification:
   domain: TREESPEC
@@ -185,8 +189,8 @@ constraints:
   invariants:
     - "All skill paths in tree-spec.toml resolve to existing files"
     - "Spec REQ id matches ^REQ-[A-Z]{2,6}-\\d{3}$"
-    - "Skill file count = 7 core capabilities + 1 registrar + 1 init bootstrap (8 SKILL.md files under skills/tree-spec/)"
-    - "[pipeline.skills] in tree-spec.toml has exactly 9 entries: 7 core capabilities + tree-spec + init"
+    - "Skill file count = 8 core capabilities + 1 registrar + 1 init bootstrap (10 SKILL.md files under skills/tree-spec/)"
+    - "[pipeline.skills] in tree-spec.toml has exactly 10 entries: 8 core capabilities + tree-spec + init"
     - "Spec file count >= 7"
   forbidden:
     - "Adding hard dependencies on specific agent environments"

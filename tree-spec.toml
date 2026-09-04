@@ -205,6 +205,22 @@ flaky_tolerance = 0.0
 description = "Run AC oracles, capture evidence, surface FAILs"
 stage = "verify"
 
+[pipeline.skills.log]
+file = "core-capabilities/log/SKILL.md"
+classification = "pure"
+reproducibility = "strict"        # deterministic append-only store
+execution_mode = "single"
+flaky_tolerance = 0.0
+description = "Write a .runs/<epic>/<run-id>/ record (run or wrap); cross-cutting"
+stage = "any"                     # any capability that produces work can invoke log
+
+# `log` became an active core capability in EPIC-010 T-04 (2026-09-04).
+# Prior to that it was documentation-only — the SKILL.md existed under
+# core-capabilities/log/ but was not registered in [pipeline.skills].
+# The runtime behind it (skills/tree-spec/treespec_log/) shipped in
+# the same task. REQ-TREESPEC-001 was bumped from 7 to 8 core
+# capabilities in revision 5 to reflect the new total.
+
 # ── EVALUATION · global rules that apply across all stages ───────
 # These are the cross-cutting invariants. Each maps to a kernel invariant
 # (CON-07) but is repeated here so the agent sees them in the manifest
@@ -245,9 +261,9 @@ participants = [
 # start by the router. Never hand-edited. On divergence artifacts win and
 # a warning is recorded (REQ-PACK-001 AC-6).
 [epic]
-active = "EPIC-009-skill-classification-schema"    # Phase 4 CON-14 — first initialized epic (done)
-stage = "4"                           # "" | 1 | 2 | 3 | 4 | closed
-updated = "2026-09-03"              # router sets the last-updated date
+active = "EPIC-011-execution-modes"    # Phase 4 CON-14 — EPIC-009 + EPIC-010 done; next queued
+stage = "1"                           # "" | 1 | 2 | 3 | 4 | closed
+updated = "2026-09-04"              # router sets the last-updated date
 
 # ── GOVERNANCE · deferred to phase 2+ ────────────────────────────
 # Will appear once the pain arrives: gate timeouts, escalation policy,
