@@ -41,7 +41,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
         try:
             selection = json.loads(args.selection)
         except ValueError as err:
-            raise ValueError(f"--selection is not valid JSON: {args.selection!r}") from err
+            raise ValueError(
+                f"--selection is not valid JSON: {args.selection!r}"
+            ) from err
     result = runs.write_record(
         args.runs_dir,
         args.epic,
@@ -106,8 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--verify", default="")
     run.add_argument("--exit-code", type=int, default=0)
     run.add_argument("--stochastic", action="store_true")
-    run.add_argument("--seed", default=None, help="seed (best-of-n/consensus attempts)"
-    )
+    run.add_argument("--seed", default=None, help="seed (best-of-n/consensus attempts)")
     run.add_argument("--reproducibility", default="strict")
     run.add_argument(
         "--id-strategy", default="sequential", choices=["sequential", "hash"]
@@ -122,15 +123,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="execution mode recorded in metadata.mode (default: single)",
     )
     run.add_argument(
-        "--chosen", action="store_true",
+        "--chosen",
+        action="store_true",
         help="write the chosen/consensus record that links to --attempts",
     )
     run.add_argument(
-        "--attempts", nargs="+", default=None,
+        "--attempts",
+        nargs="+",
+        default=None,
         help="attempt run-ids grouped by a --chosen record (AC-2, AC-3)",
     )
     run.add_argument(
-        "--selection", default=None,
+        "--selection",
+        default=None,
         help="selection outcome JSON for the --chosen record (defaults per mode)",
     )
     run.set_defaults(func=_cmd_run)

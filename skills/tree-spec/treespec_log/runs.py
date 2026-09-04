@@ -314,14 +314,25 @@ def _write_files(
         # attempts carry distinct seeds), not only for stochastic skills.
         if seed is not None:
             _write_text(os.path.join(path, "seed.txt"), str(seed))
-        _write_json(os.path.join(path, "metadata.json"), _build_metadata(
-            stochastic, seed, metadata, mode, chosen, attempts, selection,
-        ))
+        _write_json(
+            os.path.join(path, "metadata.json"),
+            _build_metadata(
+                stochastic,
+                seed,
+                metadata,
+                mode,
+                chosen,
+                attempts,
+                selection,
+            ),
+        )
     except OSError:
         raise
 
 
-def _build_metadata(stochastic, seed, metadata, mode, chosen, attempts, selection) -> dict:
+def _build_metadata(
+    stochastic, seed, metadata, mode, chosen, attempts, selection
+) -> dict:
     """metadata.json: reproducibility level, mode, retries, plus the
     best-of-n / consensus linking fields when this is a chosen record."""
     meta = {
@@ -338,14 +349,21 @@ def _build_metadata(stochastic, seed, metadata, mode, chosen, attempts, selectio
     if chosen:
         meta["chosen"] = True
         meta["attempts"] = list(attempts or [])
-        meta["selection"] = selection if selection is not None else _default_selection(mode)
+        meta["selection"] = (
+            selection if selection is not None else _default_selection(mode)
+        )
     return meta
 
 
 def _default_selection(mode) -> dict:
     """Per-mode default selection record (REQ-EXEC-003 / AC-2, AC-3)."""
     if mode == "consensus":
-        return {"criteria": "majority", "answer": None, "tally": {}, "tie_break": "lowest-seed"}
+        return {
+            "criteria": "majority",
+            "answer": None,
+            "tally": {},
+            "tie_break": "lowest-seed",
+        }
     return {"criteria": "oracle pass rate", "chosen_run": None}
 
 

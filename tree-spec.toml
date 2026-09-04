@@ -262,7 +262,7 @@ participants = [
 # a warning is recorded (REQ-PACK-001 AC-6).
 [epic]
 active = "EPIC-011-execution-modes"    # Phase 4 CON-14 — EPIC-009 + EPIC-010 done; next queued
-stage = "1"                           # "" | 1 | 2 | 3 | 4 | closed
+stage = "4"                           # "" | 1 | 2 | 3 | 4 | closed (4 = verify done, awaiting G_done)
 updated = "2026-09-04"              # router sets the last-updated date
 
 # ── GOVERNANCE · deferred to phase 2+ ────────────────────────────
