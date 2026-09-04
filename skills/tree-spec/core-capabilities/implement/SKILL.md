@@ -88,6 +88,12 @@ with `skills/tree-spec/scripts/tree-spec-check.sh --<area>` (or `--all`)
 before writing the report — drift is caught before it becomes a report
 (REQ-VALID-004 / EPIC-008).
 
+Commands you run (tests, builds, linters) leave an audit record via the
+`log` capability — `bash <skill-root>/scripts/treespec-wrap.sh --epic <id>
+--claim ... --verify ... -- <cmd>` — so the report's `test_refs` / `ci_run`
+can point at a concrete `.runs/<epic>/<run-id>/` record instead of a bare
+claim. Procedure: `core-capabilities/log/SKILL.md`.
+
 ### Step 4. Claim/Verify report
 
 Create `artifacts/epics/<EPIC>/docs/report-NN.md` per the template

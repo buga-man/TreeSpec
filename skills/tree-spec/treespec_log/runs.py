@@ -28,6 +28,7 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 # Required completeness keys (AC-4). seed.txt is intentionally absent:
 # pure skills never emit one.
@@ -52,8 +53,12 @@ def _existing_run_ids(runs_dir: str, epic_id: str) -> list[int]:
     base = epic_dir(runs_dir, epic_id)
     if not os.path.isdir(base):
         return []
+    try:
+        names = os.listdir(base)
+    except OSError:
+        return []
     nums: list[int] = []
-    for name in os.listdir(base):
+    for name in names:
         m = _ID_RE.match(name)
         if not m:
             continue
@@ -161,6 +166,16 @@ def _check_attempts(runs_dir, epic_id, mode, attempts, chosen) -> None:
         raise ValueError("--attempts contains duplicate run-ids")
 
 
+def input_hash(input_data) -> str:
+    """Stable 16-hex digest of the normalized input (REQ-EXEC-005).
+
+    Same canonical form as the id derivation: sorted keys, no ASCII
+    escaping — one logical input maps to one base id / chain.
+    """
+    blob = json.dumps(input_data, sort_keys=True, ensure_ascii=False).encode()
+    return hashlib.sha256(blob).hexdigest()[:16]
+
+
 def allocate_run_id(
     runs_dir: str,
     epic_id: str,
@@ -181,9 +196,15 @@ def allocate_run_id(
     if strategy == "hash":
         if input_data is None:
             raise ValueError("hash id strategy requires input_data")
-        blob = json.dumps(input_data, sort_keys=True, ensure_ascii=False).encode()
-        digest = hashlib.sha256(blob).hexdigest()[:16]
-        return f"{epic_id}-{digest}"
+        # Collision chaining / open addressing (REQ-EXEC-005, decision
+        # 2026-09-04): the base id stays stable per input; a repeat run
+        # probes the next free slot of the same chain (<base>-2, -3, …).
+        base = f"{epic_id}-{input_hash(input_data)}"
+        candidate, n = base, 2
+        while os.path.exists(record_dir(runs_dir, epic_id, candidate)):
+            candidate = f"{base}-{n}"
+            n += 1
+        return candidate
     raise ValueError(f"unknown id strategy: {strategy!r}")
 
 
@@ -204,6 +225,179 @@ class IncompleteRecord:
     missing: list[str] = field(default_factory=list)
 
 
+# ── Flaky detection (REQ-EXEC-004 / EPIC-012) ────────────────────
+QUARANTINE_SUBDIR = "quarantine"
+LIFT_TIMEOUT_DAYS = 30
+MAX_QUARANTINE_RUNS = 10
+
+
+@dataclass
+class SkillRate:
+    skill: str
+    failed_runs: int
+    total_runs: int
+    failed_run_ids: list[str] = field(default_factory=list)
+
+    @property
+    def rate(self) -> float:
+        return self.failed_runs / self.total_runs if self.total_runs else 0.0
+
+
+def quarantine_path(runs_dir: str, skill_id: str) -> str:
+    return os.path.join(runs_dir, QUARANTINE_SUBDIR, f"{skill_id}.json")
+
+
+def _epic_attempts(runs_dir: str, epic_id: str) -> list[tuple[str, dict, int]]:
+    """Non-chosen attempt records of one epic: (run_id, metadata, exit_code).
+
+    ``chosen`` records link attempts and are not attempts themselves, so they
+    never count toward total_runs (feasibility risk #1)."""
+    base = epic_dir(runs_dir, epic_id)
+    if not os.path.isdir(base):
+        return []
+    try:
+        names = sorted(os.listdir(base))
+    except OSError:
+        return []
+    out: list[tuple[str, dict, int]] = []
+    for name in names:
+        if not _ID_RE.match(name):
+            continue
+        meta_path = os.path.join(base, name, "metadata.json")
+        if not os.path.isfile(meta_path):
+            continue
+        try:
+            with open(meta_path, encoding="utf-8") as fh:
+                meta = json.load(fh)
+        except (ValueError, OSError):
+            continue
+        if meta.get("chosen"):
+            continue
+        exit_path = os.path.join(base, name, "exit-code.txt")
+        try:
+            with open(exit_path, encoding="utf-8") as fh:
+                code = int(fh.read().strip())
+        except (OSError, ValueError):
+            code = 0
+        out.append((name, meta, code))
+    return out
+
+
+def report_epic(runs_dir: str, epic_id: str) -> list[SkillRate]:
+    """Aggregate failed_runs / total_runs per skill over one epic's attempts."""
+    if not os.path.isdir(epic_dir(runs_dir, epic_id)):
+        raise ValueError(f"no runs recorded for epic {epic_id!r}")
+    rates: dict[str, SkillRate] = {}
+    for run_id, meta, code in _epic_attempts(runs_dir, epic_id):
+        skill = str(meta.get("skill", "unknown"))
+        rate = rates.setdefault(
+            skill, SkillRate(skill=skill, failed_runs=0, total_runs=0)
+        )
+        rate.total_runs += 1
+        if code != 0:
+            rate.failed_runs += 1
+            rate.failed_run_ids.append(run_id)
+    return [rates[k] for k in sorted(rates)]
+
+
+def save_quarantine(
+    runs_dir: str,
+    skill_id: str,
+    *,
+    tolerance: float,
+    rate: SkillRate,
+    epic_id: str,
+) -> str:
+    """Create or update the quarantine entry; returns the file path.
+
+    First quarantine creates the file (keeps ``quarantined_at``); a later
+    flaky epic updates rate/epic and appends failed run-ids (capped at the
+    last 10)."""
+    path = quarantine_path(runs_dir, skill_id)
+    entry: dict | None = None
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                entry = json.load(fh)
+        except (ValueError, OSError):
+            entry = None
+    if entry is None:
+        entry = {
+            "skill": skill_id,
+            "quarantined_at": datetime.now(timezone.utc).isoformat(),
+            "clean_epics": 0,
+        }
+    entry["flaky_tolerance"] = tolerance
+    entry["rate"] = {"failed_runs": rate.failed_runs, "total_runs": rate.total_runs}
+    entry["epic"] = epic_id
+    runs_ = list(entry.get("runs", [])) + [
+        r for r in rate.failed_run_ids if r not in entry.get("runs", [])
+    ]
+    entry["runs"] = runs_[-MAX_QUARANTINE_RUNS:]
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        _write_json(path, entry)
+    except OSError:
+        # Boundary: let the CLI report the failure (same pattern as write_record).
+        raise
+    return path
+
+
+def load_quarantine(runs_dir: str, skill_id: str) -> dict | None:
+    path = quarantine_path(runs_dir, skill_id)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (ValueError, OSError):
+        # Unreadable/corrupt entry: treat as absent; the release path then
+        # fails loudly on the missing quarantined_at instead of a traceback.
+        return None
+
+
+def release_quarantine(
+    runs_dir: str,
+    skill_id: str,
+    *,
+    clean: int | None = None,
+    manual: bool = False,
+) -> str:
+    """Release a quarantine entry (deletes the JSON); returns the reason.
+
+    No flags — 30-day time-out only. ``clean=N`` trusts the agent runtime's
+    consecutive-clean-epic count (documented protocol). ``manual`` is
+    unconditional."""
+    path = quarantine_path(runs_dir, skill_id)
+    if not os.path.isfile(path):
+        raise ValueError(f"{skill_id} not quarantined")
+    if manual:
+        reason = "manual"
+    elif clean is not None:
+        reason = f"clean-epics:{clean}"
+    else:
+        entry = load_quarantine(runs_dir, skill_id) or {}
+        try:
+            since = datetime.fromisoformat(entry["quarantined_at"])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError(
+                f"quarantine for {skill_id!r} has no valid quarantined_at"
+            ) from None
+        age_days = (datetime.now(timezone.utc) - since).total_seconds() / 86400
+        if age_days < LIFT_TIMEOUT_DAYS:
+            raise ValueError(
+                f"{skill_id} quarantined {age_days:.1f} days ago "
+                f"(< {LIFT_TIMEOUT_DAYS}); use --clean <N> or --manual to release early"
+            )
+        reason = "timeout"
+    try:
+        os.remove(path)
+    except OSError:
+        # Boundary: let the CLI report the failure.
+        raise
+    return reason
+
+
 def write_record(
     runs_dir: str,
     epic_id: str,
@@ -222,6 +416,7 @@ def write_record(
     chosen: bool = False,
     attempts: list | None = None,
     selection=None,
+    skill: str | None = None,
 ) -> RunResult:
     """Write a complete record atomically (temp dir + rename).
 
@@ -248,6 +443,16 @@ def write_record(
         base = epic_dir(runs_dir, epic_id)
         os.makedirs(base, exist_ok=True)
 
+        # Hash chain membership (REQ-EXEC-005): every hash-strategy record
+        # carries the input digest so the whole chain of one input is
+        # queryable. Additive — sequential records are untouched.
+        if id_strategy == "hash":
+            metadata = {
+                **(metadata or {}),
+                "id_strategy": "hash",
+                "input_hash": input_hash(input_data),
+            }
+
         final_path = record_dir(runs_dir, epic_id, run_id)
         if os.path.exists(final_path):
             # Append-only: never rewrite an existing run. Fail loudly instead.
@@ -272,6 +477,7 @@ def write_record(
                 chosen,
                 attempts,
                 selection,
+                skill,
             )
             os.replace(tmp_dir, final_path)
         except BaseException:
@@ -299,6 +505,7 @@ def _write_files(
     chosen,
     attempts,
     selection,
+    skill=None,
 ) -> None:
     # Single boundary handler around the record's file writes; errors
     # propagate to treespec.main. The atomic temp-dir + rename (see
@@ -324,6 +531,7 @@ def _write_files(
                 chosen,
                 attempts,
                 selection,
+                skill,
             ),
         )
     except OSError:
@@ -331,10 +539,11 @@ def _write_files(
 
 
 def _build_metadata(
-    stochastic, seed, metadata, mode, chosen, attempts, selection
+    stochastic, seed, metadata, mode, chosen, attempts, selection, skill=None
 ) -> dict:
-    """metadata.json: reproducibility level, mode, retries, plus the
-    best-of-n / consensus linking fields when this is a chosen record."""
+    """metadata.json: reproducibility level, mode, retries, the skill slug
+    (flaky-detection grouping, REQ-EXEC-004), plus the best-of-n / consensus
+    linking fields when this is a chosen record."""
     meta = {
         # AC-3: reproducibility level is the first key so the oracle's
         # "output_contains reproducibility" check is unambiguous.
@@ -344,6 +553,8 @@ def _build_metadata(
         "stochastic": bool(stochastic),
         "run_seed": seed,
     }
+    if skill is not None:
+        meta["skill"] = skill
     if metadata:
         meta.update(metadata)
     if chosen:

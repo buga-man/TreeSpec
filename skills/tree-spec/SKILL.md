@@ -30,6 +30,7 @@ composition:
 # ── SOURCE OF TRUTH (concepts) ──────────────────────────────────
 #   - ../../documents/validation.md          # what is validated, where, how to extend
 #   - ../../documents/spec-format.md         # spec L0 fields
+#   - ../../documents/execution-semantics.md # runtime behavior: retry protocol, flaky policy & quarantine, id strategies
 #   - tree-spec.toml                         # the manifest / contract
 # Language (REQ-I18N-001): this skill's human-readable artifact prose
 # follows the active language; identifiers, field names, paths, and
@@ -122,7 +123,7 @@ skills/tree-spec/scripts/tree-spec-check.sh --router
 ## Capabilities
 
 | Capability | Owns |
-|---|---|
+| --- | --- |
 | `init` | bootstrap — manifest (from template) + `artifacts/` skeleton |
 | `session-resume` | read-only state recovery + next-action recommendation |
 | `intake` | raw sources → candidate buffer |

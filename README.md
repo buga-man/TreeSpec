@@ -19,12 +19,9 @@
   Declares the 4-stage flow (`spec, plan, implement, verify`), the 3 human
   gates (`G_spec`, `G_plan`, `G_done`), the 7 skills, and the global
   evaluation rules (`[pipeline.evaluation]`).
-- `skills/` — 7 skill folders, one per skill. Each folder holds a
-  `SKILL.md` (the entry point the agent reads). Skills:
-  `intake` (normalizes raw sources into the candidate buffer),
-  `session-resume`, `brainstorm` (drafts L0 from ideas or buffered
-  candidates; optional `source_doc` fallback), `write-spec`
-  (bootstraps `artifacts/` on first run), `plan`, `implement`, `verify`.
+- `skills/tree-spec/` — the kit as **one registered skill** (manifest
+  v0.2): a router (`SKILL.md`) plus 9 core capabilities under
+  `core-capabilities/`. See the [Skills](#skills-capabilities) table below.
 - `specs/` — 8 specs describing the kit itself (1 setup + 6 skill specs + 1 i18n).
   These are the **kit describing itself** — they formalize the contract
   each component obeys. Useful as input to phase 1+ automation.
@@ -33,6 +30,47 @@
   - `README.md` — agent protocol (session start / end).
   - `global/biz-spec/REQ-TREESPEC-001.md` — the first spec.
   - `epics/EPIC-001-install-kit/` — the first epic, closed.
+
+## Skills (capabilities)
+
+The kit registers a single skill, `tree-spec` — a **router** that matches
+on project state (not on free-text topic) and dispatches to one of nine
+capabilities. Each capability owns exactly one slice of the workflow:
+
+| Capability | When it runs | Owns / produces |
+| --- | --- | --- |
+| `tree-spec` (router) | every session start | validates `tree-spec.toml`, recomputes the machine-maintained `[epic]` pointer, dispatches by state — never does work itself |
+| `init` | fresh project, no manifest | bootstraps `tree-spec.toml` (from template) + `artifacts/` skeleton |
+| `session-resume` | every session start (read-only) | resume report: active epic, stage, next action — changes nothing |
+| `intake` | raw sources available (BR/US docs, notes) | normalizes them into the candidate buffer with traceability to source refs |
+| `brainstorm` | an idea or a buffered candidate | one L0 spec **draft** per run (dialogue with the human; optional `source_doc` fallback) |
+| `write-spec` | draft agreed in dialogue | writes + registers `artifacts/global/biz-spec/REQ-*.md`, creates `biz-spec-delta.md`; bootstraps `artifacts/` on first run |
+| `plan` | after **G_spec** | decomposes the approved spec: `tasks.md` (T-NN with complexity + ACs), `docs/feasibility.md`, optional `docs/system-analysis.md` |
+| `implement` | after **G_plan** | one task per session, TDD-style, disjoint write sets per task |
+| `verify` | after implement | runs every AC oracle mechanically, captures evidence in `docs/verification.md` |
+| `log` | cross-cutting, any stage | writes `.runs/<epic>/<run-id>/` audit records (`python -m treespec_log run …` or the `treespec-wrap.sh` wrapper) |
+
+### How they connect
+
+The capabilities form one pipeline; the router walks it by reading state,
+and three human gates (`G_spec`, `G_plan`, `G_done`) are the only points
+where a human must act — the agent never passes them itself:
+
+```
+raw sources ──▶ intake ──▶ brainstorm ──▶ write-spec ─┬─ G_spec ─▶ plan ─┬─ G_plan ─▶ implement ─▶ verify ─┬─ G_done ─▶ closed
+                                                      │                  │                              │
+                        session-resume (read-only, every start) ◀────────┴──────────────────────────────┘
+                        tree-spec router: validates manifest + [epic] pointer, dispatches to the step above
+                        log: wraps any step into a .runs/ audit record (also powers flaky detection, EPIC-012)
+```
+
+Reading order for one epic: `intake → brainstorm → write-spec` produce the
+spec (stage 1); `plan` decomposes it (stage 2); `implement` executes task by
+task (stage 3); `verify` proves the ACs (stage 4). `session-resume` is the
+only capability that runs at *every* start — it is read-only and simply tells
+the router where in that chain the active epic currently sits. `log` is not a
+stage: any capability may invoke it for an audit record, and its `.runs/`
+store is what `runs report` / quarantine (EPIC-012) aggregate over later.
 
 ## What is NOT here
 
@@ -47,7 +85,7 @@
 
 > This repo is **already installed** — the kit shipped here as part of
 > phase 0 dogfood (`EPIC-001-install-kit`, all 8 ACs passed). Use this
-> section as a ** checklist when installing the kit into a fresh
+> section as a **checklist when installing the kit into a fresh
 > project**, or as a sanity check after refactors.
 
 ### Prerequisites

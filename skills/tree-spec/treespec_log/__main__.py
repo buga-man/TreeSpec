@@ -1,8 +1,10 @@
 """`python -m treespec_log` CLI entry point (REQ-EXEC-002 / EPIC-010).
 
 Subcommands:
-    run     write a .runs/<epic-id>/<run-id>/ record for one skill execution
-    runs    inspect the .runs/ store (list | validate)
+    run         write a .runs/<epic-id>/<run-id>/ record for one skill execution
+    runs        inspect the .runs/ store (list | validate | report)
+    quarantine  manage the flaky-skill quarantine store (release)
+    validate    check manifest consistency (id strategy vs skill purity)
 
 The `wrap` capability (wrapping arbitrary commands with auto-logging) is
 NOT exposed here — it lives in `treespec_log.wrap` as an internal helper
@@ -23,7 +25,7 @@ import json
 import os
 import sys
 
-from . import runs
+from . import runs, validate
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
@@ -61,12 +63,16 @@ def _cmd_run(args: argparse.Namespace) -> int:
         chosen=args.chosen,
         attempts=attempts,
         selection=selection,
+        skill=args.skill,
     )
     # AC-1: print the record path so the oracle sees ".runs/".
     # Normalise to forward slashes so the path is identifiable even on
     # Windows, where os.path.join emits backslashes.
     print(result.path.replace(os.sep, "/"))
     print(f"run-id: {result.run_id}")
+    if args.id_strategy == "hash":
+        # AC-1/AC-2 oracle anchor: the chain digest is visible on stdout.
+        print(f"input_hash={runs.input_hash(args.input)}")
     if result.stochastic and result.seed_written:
         print(f"seed: {args.seed}")
     return 0
@@ -85,7 +91,56 @@ def _cmd_runs(args: argparse.Namespace) -> int:
             return 1
         print(f"OK: all records complete under {args.runs_dir}")
         return 0
+    if args.runs_action == "report":
+        if not args.epic:
+            raise ValueError("runs report requires an epic id")
+        # Flaky detection (REQ-EXEC-004): aggregate the epic's attempts per
+        # skill, quarantine those over tolerance, and print the verdict.
+        # The report never blocks — exit 0 even with quarantined skills.
+        rates = runs.report_epic(args.runs_dir, args.epic)
+        quarantined = []
+        for rate in rates:
+            if rate.rate > args.tolerance:
+                path = runs.save_quarantine(
+                    args.runs_dir,
+                    rate.skill,
+                    tolerance=args.tolerance,
+                    rate=rate,
+                    epic_id=args.epic,
+                )
+                print(
+                    f"flaky: known issue — {rate.skill} "
+                    f"{rate.failed_runs}/{rate.total_runs} > tolerance {args.tolerance}"
+                )
+                print(f"quarantined: {rate.skill} -> {path.replace(os.sep, '/')}")
+                quarantined.append(rate.skill)
+            else:
+                print(f"ok: {rate.skill} {rate.failed_runs}/{rate.total_runs}")
+        verdict = "flaky: known issue" if quarantined else "ok"
+        print(f"verdict: {args.epic}: {verdict}")
+        return 0
     raise ValueError(f"unknown runs action: {args.runs_action!r}")
+
+
+def _cmd_validate(args: argparse.Namespace) -> int:
+    # Purity guard (REQ-EXEC-005 / AC-4): hash id strategy is only valid
+    # for skills declared `pure = true` under [pipeline.skills.<id>].
+    code, message = validate.check_id_strategy(
+        args.manifest, args.skill_id, args.strategy
+    )
+    print(message)
+    return code
+
+
+def _cmd_quarantine_release(args: argparse.Namespace) -> int:
+    reason = runs.release_quarantine(
+        args.runs_dir,
+        args.skill_id,
+        clean=args.clean,
+        manual=args.manual,
+    )
+    print(f"released: {args.skill_id} ({reason})")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -141,9 +196,46 @@ def build_parser() -> argparse.ArgumentParser:
     run.set_defaults(func=_cmd_run)
 
     runs_cmd = sub.add_parser("runs", help="inspect the .runs/ store")
-    runs_cmd.add_argument("runs_action", choices=["list", "validate"])
+    runs_cmd.add_argument("runs_action", choices=["list", "validate", "report"])
+    runs_cmd.add_argument("epic", nargs="?", default=None, help="epic id (report only)")
     runs_cmd.add_argument("--path", default=".runs", help="runs store to act on")
+    runs_cmd.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.0,
+        help="flaky tolerance for report (default: 0.0; the agent passes the skill's manifest value)",
+    )
     runs_cmd.set_defaults(func=_cmd_runs)
+
+    vcmd = sub.add_parser(
+        "validate", help="check manifest consistency (id strategy vs purity)"
+    )
+    vcmd.add_argument("--manifest", required=True, help="path to tree-spec.toml")
+    vcmd.add_argument("--skill", required=True, dest="skill_id", help="skill slug")
+    vcmd.add_argument(
+        "--strategy",
+        choices=["sequential", "hash"],
+        default=None,
+        help=(
+            "override the effective id strategy "
+            "(default: [kernel].id_strategy, else sequential)"
+        ),
+    )
+    vcmd.set_defaults(func=_cmd_validate)
+
+    qcmd = sub.add_parser("quarantine", help="manage the flaky-skill quarantine store")
+    qsub = qcmd.add_subparsers(dest="quarantine_action", required=True)
+    rel = qsub.add_parser("release", help="release a quarantined skill")
+    rel.add_argument("--id", required=True, dest="skill_id", help="skill slug")
+    rel.add_argument(
+        "--clean",
+        type=int,
+        default=None,
+        metavar="N",
+        help="release after N consecutive clean epics (agent-counted)",
+    )
+    rel.add_argument("--manual", action="store_true", help="unconditional manual clear")
+    rel.set_defaults(func=_cmd_quarantine_release)
 
     return parser
 

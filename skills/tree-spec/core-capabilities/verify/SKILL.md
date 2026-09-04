@@ -90,6 +90,12 @@ For each AC:
    - **FAIL** — does not match.
    - **SKIP** — environment unavailable (e.g., ci run cannot be triggered locally).
 
+> **Audit trail:** wrap each oracle command with the `log` capability
+> (`bash <skill-root>/scripts/treespec-wrap.sh --epic <id> --claim ... --verify ...
+> -- <cmd>`) so every run lands in `.runs/<epic>/<run-id>/`; reference the
+> record path in the AC entry's `evidence`. Procedure:
+> `core-capabilities/log/SKILL.md`.
+
 Sample entry in verification.md:
 
 ```yaml
@@ -168,6 +174,14 @@ Create `artifacts/epics/<EPIC>/docs/verification.md`:
 ```
 
 ### Step 6. If there are FAILs
+
+Before opening the conflict, check whether the failure is *flaky* rather
+than real: re-run the failed oracle per the retry protocol in
+[`../../documents/execution-semantics.md`](../../documents/execution-semantics.md)
+and read `python -m treespec_log runs report <epic>` — if the skill's
+`failed_runs / total_runs` exceeds its
+`[pipeline.skills.<id>].flaky_tolerance`, the verdict is flaky: quarantine
+per the same document instead of a plain conflict.
 
 Do not fix the code yourself. That is a **return** to stage 3:
 

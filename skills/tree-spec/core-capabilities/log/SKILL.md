@@ -44,8 +44,15 @@ into an append-only `.runs/<epic>/<run-id>/` record.
 > **Source of truth:** `tree-spec.toml` section
 > `[pipeline.evaluation] claim_verify` (every report has claim + verify)
 > and the runtime contract in
-> `skills/tree-spec/treespec_log/runs.py` (atomic write, sequential id).
+> `skills/tree-spec/treespec_log/runs.py` (atomic write, id allocation).
 > If they ever disagree, the manifest wins — escalate to the human.
+>
+> **Runtime behavior protocols** — agent retry cycles, flaky verdict /
+> quarantine & lift rules, and the id strategies (`sequential` / `hash`
+> collision chains + purity guard) — are documented in
+> [`../../documents/execution-semantics.md`](../../documents/execution-semantics.md).
+> Read it before driving `run` with `--id-strategy hash`, `runs report`,
+> or `quarantine release`.
 
 This capability is the **procedural face** of the runtime that lives at
 `skills/tree-spec/treespec_log/`. The runtime handles record I/O; this

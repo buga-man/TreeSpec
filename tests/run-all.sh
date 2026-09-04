@@ -175,6 +175,50 @@ else
     FAILED+=("$em_script")
 fi
 
+# ── EPIC-012 flaky-detection tests (REQ-EXEC-004 / quarantine + report) ─
+# The record-layer flaky detection is exercised end-to-end by
+# tests/runs/test-flaky-detection.sh (AC-1..AC-6). Additive: its exit code
+# aggregates with the rest, like the exec-modes group above.
+
+printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "flaky-detection (EPIC-012)\n"
+fd_script="tests/runs/test-flaky-detection.sh"
+if [ ! -f "$fd_script" ]; then
+    printf "  ✗ %s — not found\n" "$fd_script"
+    FAIL=$((FAIL + 1))
+    FAILED+=("$fd_script")
+elif bash "$fd_script" >/tmp/test-fd-$(basename "$fd_script" .sh).log 2>&1; then
+    printf "  ✓ %s\n" "$fd_script"
+    PASS=$((PASS + 1))
+else
+    printf "  ✗ %s\n" "$fd_script"
+    cat /tmp/test-fd-$(basename "$fd_script" .sh).log
+    FAIL=$((FAIL + 1))
+    FAILED+=("$fd_script")
+fi
+
+# ── EPIC-013 id-strategies tests (REQ-EXEC-005 / hash chaining + validate) ─
+# The record-layer id strategies are exercised end-to-end by
+# tests/runs/test-id-strategies.sh (AC-1..AC-4). Additive: its exit code
+# aggregates with the rest, like the flaky-detection group above.
+
+printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "id-strategies (EPIC-013)\n"
+id_script="tests/runs/test-id-strategies.sh"
+if [ ! -f "$id_script" ]; then
+    printf "  ✗ %s — not found\n" "$id_script"
+    FAIL=$((FAIL + 1))
+    FAILED+=("$id_script")
+elif bash "$id_script" >/tmp/test-id-$(basename "$id_script" .sh).log 2>&1; then
+    printf "  ✓ %s\n" "$id_script"
+    PASS=$((PASS + 1))
+else
+    printf "  ✗ %s\n" "$id_script"
+    cat /tmp/test-id-$(basename "$id_script" .sh).log
+    FAIL=$((FAIL + 1))
+    FAILED+=("$id_script")
+fi
+
 printf "\n════════════════════════════════════════════════════════════════\n"
 printf "Result: %d passed, %d failed\n" "$PASS" "$FAIL"
 

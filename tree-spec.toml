@@ -32,6 +32,7 @@ owners = ["treespec-maintainers"]       # who owns this manifest
 [kernel]
 version = "0.1.0"                       # semver-range. Phase 0: exact version.
 compatibility = "strict"                # strict | lenient. Phase 0 — strict: anything extra is an error.
+id_strategy = "sequential"              # sequential | hash (REQ-EXEC-005). The agent reads this key and passes it to `treespec_log run --id-strategy`; the CLI itself stays manifest-agnostic. `hash` is only valid for skills declared `pure = true` under [pipeline.skills.<id>] (checked by `treespec_log validate`).
 
 # ── META · active language (REQ-I18N-001, i18n) ───────────────────
 # The kit is localizable: human-readable content (skill procedures,
@@ -261,8 +262,8 @@ participants = [
 # start by the router. Never hand-edited. On divergence artifacts win and
 # a warning is recorded (REQ-PACK-001 AC-6).
 [epic]
-active = "EPIC-012-flaky-detection"   # Phase 4 CON-14 — EPIC-009/010/011 closed; next queued
-stage = "1"                           # "" | 1 | 2 | 3 | 4 | closed (EPIC-011 closed after G_done 2026-09-04)
+active = "EPIC-013-id-strategies"   # EPIC-012 closed after G_done 2026-09-04; next queued
+stage = "4"                           # "" | 1 | 2 | 3 | 4 | closed (T-01..T-03 done, 4/4 AC pass, awaiting G_done)
 updated = "2026-09-04"              # router sets the last-updated date
 
 # ── GOVERNANCE · deferred to phase 2+ ────────────────────────────
